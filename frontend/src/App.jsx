@@ -11,6 +11,7 @@ import SplashScreen from './pages/SplashScreen';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import FileManagementPage from './pages/FileManagementPage';
+import FTPTransferPage from './pages/FTPTransferPage';
 import SettingsPage from './pages/SettingsPage';
 import AboutPage from './pages/AboutPage';
 import DecryptPage from './pages/DecryptPage';
@@ -72,6 +73,7 @@ function AppContent() {
                   <Route path="/" element={<HomePage />} />
                   <Route path="/files" element={<FileManagementPage />} />
                   <Route path="/decrypt" element={<DecryptPage />} />
+                  <Route path="/ftp" element={<FTPTransferPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />

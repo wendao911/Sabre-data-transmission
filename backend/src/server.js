@@ -3,16 +3,16 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
-require('dotenv').config();
+const config = require('./config');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = config.server.port;
 
 // Middleware
 app.use(helmet());
 app.use(cors({
   origin: [
-    'http://localhost:3000',
+    config.cors.origin,
     'http://localhost:3001',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001'
@@ -31,6 +31,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/files', require('./routes/files'));
 app.use('/api/decrypt', require('./routes/decrypt'));
+app.use('/api/ftp', require('./routes/ftp'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -38,6 +39,27 @@ app.get('/api/health', (req, res) => {
     status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
+  });
+});
+
+// Configuration check endpoint
+app.get('/api/config-check', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      server: config.server,
+      ftp: {
+        host: config.ftp.host,
+        port: config.ftp.port,
+        user: config.ftp.user,
+        password: config.ftp.password ? '***' : 'undefined',
+        secure: config.ftp.secure
+      },
+      file: config.file,
+      database: {
+        uri: config.database.uri ? '***' : 'undefined'
+      }
+    }
   });
 });
 

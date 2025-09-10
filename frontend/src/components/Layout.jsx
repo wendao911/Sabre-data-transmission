@@ -4,6 +4,7 @@ import {
   HomeOutlined, 
   FileOutlined, 
   UnlockOutlined,
+  CloudUploadOutlined,
   SettingOutlined, 
   UserOutlined,
   LogoutOutlined,
@@ -13,6 +14,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import logo from '../assets/logo.png';
 
 const { Header, Sider, Content } = AntLayout;
 
@@ -37,6 +39,11 @@ const Layout = ({ children }) => {
       key: '/decrypt',
       icon: <UnlockOutlined />,
       label: '文件解密',
+    },
+    {
+      key: '/ftp',
+      icon: <CloudUploadOutlined />,
+      label: 'FTP传输',
     },
     {
       key: '/settings',
@@ -77,9 +84,21 @@ const Layout = ({ children }) => {
         className="shadow-lg"
       >
         <div className="h-16 flex items-center justify-center border-b border-gray-200">
-          <div className="text-white font-bold text-lg">
-            {collapsed ? 'AC' : 'ACCA'}
-          </div>
+          {collapsed ? (
+            <img 
+              src={logo} 
+              alt="Logo" 
+              className="h-10 w-auto mx-auto"
+            />
+          ) : (
+            <div className="flex items-center justify-center space-x-2 w-full">
+              <img 
+                src={logo} 
+                alt="Logo" 
+                className="h-10 w-auto"
+              />
+            </div>
+          )}
         </div>
         <Menu
           theme="light"

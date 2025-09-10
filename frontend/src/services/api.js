@@ -265,3 +265,99 @@ export const decryptAPI = {
 export const healthAPI = {
   check: () => apiClient.healthCheck(),
 };
+
+// FTP API
+export const ftpAPI = {
+  // 连接管理
+  connect: (config) => apiClient.client.post('/ftp/connect', config).then(r => r.data),
+  connectWithEnv: () => apiClient.client.post('/ftp/connect-env').then(r => r.data),
+  disconnect: () => apiClient.client.post('/ftp/disconnect').then(r => r.data),
+  getStatus: () => apiClient.client.get('/ftp/status').then(r => r.data),
+  getConfig: () => apiClient.client.get('/ftp/config').then(r => r.data),
+  
+  // 目录操作
+  listDirectory: (path = '/') => apiClient.client.get('/ftp/list', { params: { path } }).then(r => r.data),
+  createDirectory: (path) => apiClient.client.post('/ftp/mkdir', { path }).then(r => r.data),
+  deleteDirectory: (path) => apiClient.client.delete('/ftp/dir', { data: { path } }).then(r => r.data),
+  
+  // 文件操作
+  uploadFile: (file, remotePath) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('remotePath', remotePath);
+    return apiClient.client.post('/ftp/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }).then(r => r.data);
+  },
+  downloadFile: (remotePath, localPath) => apiClient.client.post('/ftp/download', { remotePath, localPath }).then(r => r.data),
+  deleteFile: (path) => apiClient.client.delete('/ftp/file', { data: { path } }).then(r => r.data),
+  getFileInfo: (path) => apiClient.client.get('/ftp/file-info', { params: { path } }).then(r => r.data),
+  
+  // 批量操作
+  uploadMultiple: (files, remoteDir, onProgress) => {
+    console.log('=== API uploadMultiple 调用 ===');
+    console.log('文件数量:', files.length);
+    console.log('远程目录:', remoteDir);
+    
+    const formData = new FormData();
+    files.forEach((file, index) => {
+      console.log(`添加文件 ${index + 1}:`, {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+      formData.append('files', file);
+    });
+    formData.append('remoteDir', remoteDir);
+    
+    // 计算总文件大小，设置合适的超时时间（上限15分钟）
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    const computed = (totalSize / 1024) * 50; // 每KB 50ms
+    const timeoutMs = Math.min(15 * 60 * 1000, Math.max(120000, Math.floor(computed))); // 2分钟-15分钟
+    
+    console.log('总文件大小:', totalSize, 'bytes');
+    console.log('超时时间(客户端):', timeoutMs, 'ms');
+    
+    return apiClient.client.post('/ftp/upload-multiple', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: timeoutMs,
+      onUploadProgress: (evt) => {
+        if (!evt) return;
+        const total = evt.total || totalSize;
+        const loaded = evt.loaded || 0;
+        const percent = total > 0 ? Math.min(99, Math.floor((loaded / total) * 100)) : 0; // 保留1%给服务端处理
+        if (typeof onProgress === 'function') onProgress(percent, loaded, total);
+      },
+    }).then(r => {
+      console.log('API响应:', r.data);
+      return r.data;
+    }).catch(error => {
+      console.error('API调用失败:', error);
+      throw error;
+    });
+  },
+  downloadMultiple: (files) => apiClient.client.post('/ftp/download-multiple', { files }).then(r => r.data),
+  
+  // 同步操作
+  syncEncrypted: (date, remoteDir = '/encrypted') => apiClient.client.post('/ftp/sync-encrypted', { date, remoteDir }).then(r => r.data),
+  syncDecrypted: (date, remoteDir = '/decrypted') => apiClient.client.post('/ftp/sync-decrypted', { date, remoteDir }).then(r => r.data),
+  downloadStreamUrl: (remotePath) => {
+    const base = API_BASE_URL.replace(/\/$/, '');
+    const url = `${base}/ftp/download-stream?path=${encodeURIComponent(remotePath)}`;
+    return url;
+  },
+  downloadAsAttachment: (remotePath) => {
+    const url = ftpAPI.downloadStreamUrl(remotePath);
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  },
+};

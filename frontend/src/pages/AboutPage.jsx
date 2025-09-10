@@ -4,7 +4,7 @@ import { Card, Typography, Row, Col, Table } from 'antd';
 const { Title, Text } = Typography;
 
 function AboutPage() {
-  const buildDate = new Date().toLocaleDateString();
+  const buildDate = new Date(2025, 8, 10).toLocaleDateString();
 
   const columns = [
     { title: '版本', dataIndex: 'version', key: 'version', width: 180 },
