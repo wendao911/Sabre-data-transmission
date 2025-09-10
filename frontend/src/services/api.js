@@ -145,10 +145,14 @@ class ApiClient {
     }
   }
 
-  async startDecrypt() {
+  async startDecrypt(params = {}) {
     try {
       // 按默认超时发起请求；若后续仍需加长，可改成 { timeout: 600000 }
-      const response = await this.client.post('/decrypt/start', {}, { timeout: 0 });
+      const payload = {};
+      if (params && params.date) payload.date = params.date;
+      if (params && params.month) payload.month = params.month;
+      if (params && params.filePath) payload.filePath = params.filePath;
+      const response = await this.client.post('/decrypt/start', payload, { timeout: 0 });
       return response.data.data; // 返回data字段中的结果
     } catch (error) {
       this.handleError(error);
@@ -255,10 +259,11 @@ export const fileAPI = {
 
 export const decryptAPI = {
   getStatus: () => apiClient.getDecryptStatus(),
-  startDecrypt: () => apiClient.startDecrypt(),
+  startDecrypt: (params) => apiClient.startDecrypt(params),
   getFiles: () => apiClient.getDecryptFiles(),
   getProgressStream: () => new EventSource('http://localhost:3000/api/decrypt/progress'),
   startByDate: (date) => apiClient.client.post('/decrypt/start-by-date', { date }).then(r => r.data?.data),
+  startByMonth: (month) => apiClient.client.post('/decrypt/start-by-month', { month }).then(r => r.data?.data),
   startByFile: (path) => apiClient.client.post('/decrypt/start-by-file', { path }).then(r => r.data?.data),
 };
 

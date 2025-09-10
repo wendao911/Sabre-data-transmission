@@ -50,8 +50,8 @@ function getKeyForDate(date) {
 }
 
 /**
- * 获取所有.gpg文件及其对应的日期和密钥
- * @returns {Array<{filePath: string, date: string, filename: string, keyFile: string}>} - 文件信息数组
+ * 获取输入文件（包含 .gpg 与非 .gpg），并附带日期、密钥与是否为GPG标记
+ * @returns {Array<{filePath: string, date: string, filename: string, keyFile: string|null, isGpg: boolean}>}
  */
 function getGpgFiles() {
     const gpgFiles = [];
@@ -71,17 +71,18 @@ function getGpgFiles() {
             
             if (stat.isDirectory()) {
                 scanDirectory(itemPath);
-            } else if (item.endsWith('.gpg')) {
+            } else {
                 const date = extractDateFromFilename(item);
-                if (date) {
-                    const keyFile = getKeyForDate(date);
-                    gpgFiles.push({
-                        filePath: itemPath,
-                        date: date,
-                        filename: item,
-                        keyFile: keyFile
-                    });
-                }
+                if (!date) continue; // 跳过无法识别日期的文件
+                const isGpg = item.endsWith('.gpg');
+                const keyFile = isGpg ? getKeyForDate(date) : null;
+                gpgFiles.push({
+                    filePath: itemPath,
+                    date: date,
+                    filename: item,
+                    keyFile: keyFile,
+                    isGpg: isGpg
+                });
             }
         }
     }
@@ -256,7 +257,7 @@ async function decryptAllFiles(progressCallback = null, options = {}) {
     };
     
     try {
-        // 检查必要文件
+        // 检查必要文件（仅当存在GPG文件时）
         const projectRoot = path.join(__dirname, '..', '..', '..');
         const aitsKey = path.join(projectRoot, 'AITS-primary-key.asc');
         const k6Key = path.join(projectRoot, 'K6-primary-key.asc');
@@ -274,15 +275,17 @@ async function decryptAllFiles(progressCallback = null, options = {}) {
             throw new Error(`K6密码文件 ${k6PassphraseFile} 不存在`);
         }
         
-        // 检查GPG是否安装
-        if (!(await checkGpgInstalled())) {
-            throw new Error('系统未安装GPG，请先安装GPG');
-        }
-        
-        // 获取所有GPG文件，并按需过滤
+        // 获取输入文件，并按需过滤
         let gpgFiles = getGpgFiles();
         if (options && options.date) {
             gpgFiles = gpgFiles.filter(f => f.date === options.date);
+        }
+        // 支持按月份过滤（YYYYMM）
+        if (options && options.month) {
+            const month = String(options.month);
+            if (/^\d{6}$/.test(month)) {
+                gpgFiles = gpgFiles.filter(f => typeof f.date === 'string' && f.date.startsWith(month));
+            }
         }
         if (options && options.filePath) {
             gpgFiles = gpgFiles.filter(f => f.filePath === options.filePath || f.filename === options.filePath);
@@ -302,20 +305,44 @@ async function decryptAllFiles(progressCallback = null, options = {}) {
             return results;
         }
         
+        // 若存在GPG文件，则检查GPG环境与密钥
+        const gpgOnlyFiles = gpgFiles.filter(f => f.isGpg);
+        if (gpgOnlyFiles.length > 0) {
+            // 检查必要文件
+            if (!fs.existsSync(aitsKey)) {
+                throw new Error(`AITS私钥文件 ${aitsKey} 不存在`);
+            }
+            
+            if (!fs.existsSync(k6Key)) {
+                throw new Error(`K6私钥文件 ${k6Key} 不存在`);
+            }
+            
+            if (!fs.existsSync(k6PassphraseFile)) {
+                throw new Error(`K6密码文件 ${k6PassphraseFile} 不存在`);
+            }
+            
+            // 检查GPG是否安装
+            if (!(await checkGpgInstalled())) {
+                throw new Error('系统未安装GPG，请先安装GPG');
+            }
+        }
+
         // 提取所有日期和需要的密钥
         const dates = new Set();
         const keyFiles = new Set();
         gpgFiles.forEach(file => {
             dates.add(file.date);
-            keyFiles.add(file.keyFile);
+            if (file.isGpg && file.keyFile) keyFiles.add(file.keyFile);
         });
         
         // 创建日期目录
         createDateDirectories(dates);
         
         // 导入所有需要的私钥（省略控制台输出）
-        if (!(await importAllPrivateKeys(keyFiles))) {
-            throw new Error('私钥导入失败');
+        if (gpgOnlyFiles.length > 0) {
+            if (!(await importAllPrivateKeys(keyFiles))) {
+                throw new Error('私钥导入失败');
+            }
         }
         // 私钥导入成功（省略控制台输出）
         
@@ -351,7 +378,7 @@ async function decryptAllFiles(progressCallback = null, options = {}) {
                 if (progressCallback) {
                     progressCallback({
                         type: 'file_start',
-                        message: `正在解密：${file.filename}`,
+                        message: file.isGpg ? `正在解密：${file.filename}` : `正在复制：${file.filename}`,
                         filename: file.filename,
                         keyFile: file.keyFile,
                         progress: Math.round((processedCount / totalFiles) * 100),
@@ -361,31 +388,45 @@ async function decryptAllFiles(progressCallback = null, options = {}) {
                 }
                 
                 try {
-                    const passphrase = readPassphrase(file.keyFile);
-                    if (await decryptGpgFile(file.filePath, dateDir, file.keyFile, passphrase)) {
+                    if (file.isGpg) {
+                        const passphrase = readPassphrase(file.keyFile);
+                        if (await decryptGpgFile(file.filePath, dateDir, file.keyFile, passphrase)) {
+                            results.success++;
+                            processedCount++;
+                            if (progressCallback) {
+                                progressCallback({
+                                    type: 'file_success',
+                                    message: `解密成功：${file.filename}`,
+                                    filename: file.filename,
+                                    progress: Math.round((processedCount / totalFiles) * 100),
+                                    current: processedCount,
+                                    total: totalFiles
+                                });
+                            }
+                        } else {
+                            results.errors.push(`解密失败：${file.filename}`);
+                            processedCount++;
+                            if (progressCallback) {
+                                progressCallback({
+                                    type: 'file_error',
+                                    message: `解密失败：${file.filename}`,
+                                    filename: file.filename,
+                                    progress: Math.round((processedCount / totalFiles) * 100),
+                                    current: processedCount,
+                                    total: totalFiles
+                                });
+                            }
+                        }
+                    } else {
+                        // 非加密文件，直接复制
+                        const target = path.join(dateDir, file.filename);
+                        fs.copyFileSync(file.filePath, target);
                         results.success++;
-                        // 省略控制台输出：解密成功
                         processedCount++;
-                        
                         if (progressCallback) {
                             progressCallback({
                                 type: 'file_success',
-                                message: `解密成功：${file.filename}`,
-                                filename: file.filename,
-                                progress: Math.round((processedCount / totalFiles) * 100),
-                                current: processedCount,
-                                total: totalFiles
-                            });
-                        }
-                    } else {
-                        results.errors.push(`解密失败：${file.filename}`);
-                        // 省略控制台输出：解密失败
-                        processedCount++;
-                        
-                        if (progressCallback) {
-                            progressCallback({
-                                type: 'file_error',
-                                message: `解密失败：${file.filename}`,
+                                message: `复制成功：${file.filename}`,
                                 filename: file.filename,
                                 progress: Math.round((processedCount / totalFiles) * 100),
                                 current: processedCount,
@@ -394,14 +435,14 @@ async function decryptAllFiles(progressCallback = null, options = {}) {
                         }
                     }
                 } catch (error) {
-                    results.errors.push(`解密失败：${file.filename} - ${error.message}`);
+                    results.errors.push(`${file.isGpg ? '解密失败' : '复制失败'}：${file.filename} - ${error.message}`);
                     // 省略控制台输出：解密异常
                     processedCount++;
                     
                     if (progressCallback) {
                         progressCallback({
                             type: 'file_error',
-                            message: `解密失败：${file.filename} - ${error.message}`,
+                            message: `${file.isGpg ? '解密失败' : '复制失败'}：${file.filename} - ${error.message}`,
                             filename: file.filename,
                             error: error.message,
                             progress: Math.round((processedCount / totalFiles) * 100),

@@ -66,11 +66,11 @@ router.post('/start', async (req, res) => {
             timestamp: new Date().toISOString()
         });
 
-        const { date, filePath } = req.body || {};
+        const { date, month, filePath } = req.body || {};
 
         const results = await decryptService.decryptAllFiles((progressData) => {
             broadcastProgress(progressData);
-        }, { date, filePath });
+        }, { date, month, filePath });
         
         // 发送完成事件
         broadcastProgress({
@@ -131,6 +131,38 @@ router.post('/start-by-date', async (req, res) => {
         broadcastProgress({
             type: 'complete',
             message: `解密完成（日期 ${date}）`,
+            data: { total: results.total, success: results.success, failed: results.total - results.success, errors: results.errors },
+            timestamp: new Date().toISOString()
+        });
+
+        res.json({ success: true, data: { total: results.total, success: results.success, failed: results.total - results.success, errors: results.errors } });
+    } catch (error) {
+        broadcastProgress({ type: 'error', message: '解密失败', error: error.message, timestamp: new Date().toISOString() });
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * @route POST /api/decrypt/start-by-month
+ * @desc 仅解密某个月（YYYYMM）的加密文件
+ * @query month=YYYYMM
+ */
+router.post('/start-by-month', async (req, res) => {
+    try {
+        const month = (req.body && req.body.month) || req.query.month;
+        if (!month || !/^\d{6}$/.test(month)) {
+            return res.status(400).json({ success: false, error: 'Invalid month. Expect YYYYMM' });
+        }
+
+        broadcastProgress({ type: 'start', message: `开始解密月份 ${month} 的文件...`, timestamp: new Date().toISOString() });
+
+        const results = await decryptService.decryptAllFiles((progressData) => {
+            broadcastProgress(progressData);
+        }, { month });
+
+        broadcastProgress({
+            type: 'complete',
+            message: `解密完成（月份 ${month}）`,
             data: { total: results.total, success: results.success, failed: results.total - results.success, errors: results.errors },
             timestamp: new Date().toISOString()
         });

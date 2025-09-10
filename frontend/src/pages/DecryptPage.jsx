@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Button, Progress, List, Typography, Alert, Space, Statistic, Row, Col, Spin } from 'antd';
+import { Card, Button, Progress, List, Typography, Alert, Space, Statistic, Row, Col, Spin, Select, DatePicker } from 'antd';
 import VirtualList from 'rc-virtual-list';
 import { PlayCircleOutlined, PauseCircleOutlined, ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { decryptAPI } from '../services/api';
@@ -21,6 +21,9 @@ const DecryptPage = () => {
     success: 0,
     failed: 0
   });
+  const [filterMode, setFilterMode] = useState('all'); // all | date | month
+  const [selectedDate, setSelectedDate] = useState(null); // YYYYMMDD
+  const [selectedMonth, setSelectedMonth] = useState(null); // YYYYMM
 
   const eventSourceRef = useRef(null);
   const reconnectTimerRef = useRef(null);
@@ -82,7 +85,23 @@ const DecryptPage = () => {
       openProgressStream();
 
       // 开始解密
-      await decryptAPI.startDecrypt();
+      const params = {};
+      if (filterMode === 'date') {
+        if (!selectedDate) {
+          toast.error('请选择具体日期');
+          setIsDecrypting(false);
+          return;
+        }
+        params.date = selectedDate;
+      } else if (filterMode === 'month') {
+        if (!selectedMonth) {
+          toast.error('请选择月份');
+          setIsDecrypting(false);
+          return;
+        }
+        params.month = selectedMonth;
+      }
+      await decryptAPI.startDecrypt(params);
     } catch (error) {
       toast.error('启动解密失败: ' + error.message);
       setIsDecrypting(false);
@@ -287,13 +306,49 @@ const DecryptPage = () => {
       {/* 解密控制 */}
       <Card title="解密控制">
         <div className="flex items-center space-x-4">
+          <Space size="middle" align="center">
+            <Select
+              value={filterMode}
+              onChange={setFilterMode}
+              style={{ width: 140 }}
+              options={[
+                { label: '全部', value: 'all' },
+                { label: '按日期', value: 'date' },
+                { label: '按月份', value: 'month' },
+              ]}
+              disabled={isDecrypting}
+            />
+            {filterMode === 'date' && (
+              <DatePicker
+                onChange={(d) => setSelectedDate(d ? d.format('YYYYMMDD') : null)}
+                placeholder="选择日期"
+                allowClear
+                disabled={isDecrypting}
+              />
+            )}
+            {filterMode === 'month' && (
+              <DatePicker
+                picker="month"
+                onChange={(d) => setSelectedMonth(d ? d.format('YYYYMM') : null)}
+                placeholder="选择月份"
+                allowClear
+                disabled={isDecrypting}
+              />
+            )}
+          </Space>
           {!isDecrypting ? (
             <Button
               type="primary"
               size="large"
               icon={<PlayCircleOutlined />}
               onClick={startDecrypt}
-              disabled={!status?.privateKeys?.aits?.exists || !status?.privateKeys?.k6?.exists || !status?.passphrases?.k6?.exists}
+              disabled={
+                !status?.privateKeys?.aits?.exists ||
+                !status?.privateKeys?.k6?.exists ||
+                !status?.passphrases?.k6?.exists ||
+                (filterMode === 'date' && !selectedDate) ||
+                (filterMode === 'month' && !selectedMonth)
+              }
             >
               开始解密
             </Button>

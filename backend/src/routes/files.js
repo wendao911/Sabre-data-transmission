@@ -26,7 +26,7 @@ function paginate(arr, page, pageSize) {
   return { total, items: arr.slice(start, end) };
 }
 
-// GET /api/files/encrypted - list encrypted .gpg files with search + pagination
+// GET /api/files/encrypted - list source files (include .gpg and non-.gpg) with search + pagination
 router.get('/encrypted', (req, res) => {
   try {
     const projectRoot = path.join(__dirname, '..', '..', '..');
@@ -35,12 +35,15 @@ router.get('/encrypted', (req, res) => {
     const page = parseInt(req.query.page || '1');
     const pageSize = parseInt(req.query.pageSize || '20');
 
-    const all = walkDir(encDir, (name) => name.endsWith('.gpg'))
+    const datePattern = /(\d{8})/;
+    const all = walkDir(encDir)
+      .filter(({ file }) => datePattern.test(file))
       .map(({ file, filePath, stat }) => ({
         filename: file,
         path: filePath,
         size: stat.size,
         mtime: stat.mtimeMs,
+        isGpg: file.endsWith('.gpg')
       }))
       .filter(f => (search ? f.filename.toLowerCase().includes(search) : true))
       .sort((a, b) => a.filename.localeCompare(b.filename));
@@ -52,7 +55,7 @@ router.get('/encrypted', (req, res) => {
   }
 });
 
-// GET /api/files/encrypted-groups - list YYYYMMDD groups from encrypted filenames
+// GET /api/files/encrypted-groups - list YYYYMMDD groups from source filenames
 router.get('/encrypted-groups', (req, res) => {
   try {
     const projectRoot = path.join(__dirname, '..', '..', '..');
@@ -61,7 +64,8 @@ router.get('/encrypted-groups', (req, res) => {
     const pageSize = parseInt(req.query.pageSize || '20');
 
     const datePattern = /(\d{8})/;
-    const all = walkDir(encDir, (name) => name.endsWith('.gpg'))
+    const all = walkDir(encDir)
+      .filter(({ file }) => datePattern.test(file))
       .map(({ file }) => {
         const m = file.match(datePattern);
         return m ? m[1] : null;
@@ -84,7 +88,7 @@ router.get('/encrypted-groups', (req, res) => {
   }
 });
 
-// GET /api/files/encrypted-by-date?date=YYYYMMDD - list encrypted files for a specific date
+// GET /api/files/encrypted-by-date?date=YYYYMMDD - list source files for a specific date
 router.get('/encrypted-by-date', (req, res) => {
   try {
     const projectRoot = path.join(__dirname, '..', '..', '..');
@@ -99,12 +103,12 @@ router.get('/encrypted-by-date', (req, res) => {
     }
 
     const datePattern = /(\d{8})/;
-    const all = walkDir(encDir, (name) => name.endsWith('.gpg'))
+    const all = walkDir(encDir)
       .filter(({ file }) => {
         const m = file.match(datePattern);
         return m && m[1] === date;
       })
-      .map(({ file, filePath, stat }) => ({ filename: file, path: filePath, size: stat.size, mtime: stat.mtimeMs }))
+      .map(({ file, filePath, stat }) => ({ filename: file, path: filePath, size: stat.size, mtime: stat.mtimeMs, isGpg: file.endsWith('.gpg') }))
       .filter(f => (search ? f.filename.toLowerCase().includes(search) : true))
       .sort((a, b) => b.filename.localeCompare(a.filename));
 
