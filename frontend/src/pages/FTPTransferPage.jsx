@@ -37,7 +37,7 @@ import {
   UploadOutlined,
   DownloadOutlined,
 } from '@ant-design/icons';
-import { ftpAPI } from '../services/api';
+import { ftpAPI, scheduleAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const { TabPane } = Tabs;
@@ -47,6 +47,11 @@ const { TextArea } = Input;
 const FTPTransferPage = () => {
   // 连接状态
   const [isConnected, setIsConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  
+  // FTP 配置
+  const [activeFtpConfig, setActiveFtpConfig] = useState(null);
+  const [loadingConfig, setLoadingConfig] = useState(false);
 
   // 目录和文件管理
   const [currentPath, setCurrentPath] = useState('/');
@@ -80,6 +85,7 @@ const FTPTransferPage = () => {
   // 检查连接状态
   useEffect(() => {
     checkConnectionStatus();
+    loadActiveFtpConfig();
   }, []);
 
   // 检查连接状态
@@ -89,6 +95,60 @@ const FTPTransferPage = () => {
       setIsConnected(result.data?.connected || false);
     } catch (error) {
       console.error('检查连接状态失败:', error);
+    }
+  };
+
+  // 加载活跃的 FTP 配置
+  const loadActiveFtpConfig = async () => {
+    setLoadingConfig(true);
+    try {
+      const resp = await scheduleAPI.getActiveFtpConfig();
+      if (resp?.success && resp.data) {
+        setActiveFtpConfig(resp.data);
+      }
+    } catch (error) {
+      console.error('加载 FTP 配置失败:', error);
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
+
+  // 连接 FTP
+  const handleConnectFtp = async () => {
+    if (!activeFtpConfig) {
+      toast.error('没有可用的 FTP 配置');
+      return;
+    }
+
+    setConnecting(true);
+    try {
+      const connectParams = {
+        host: activeFtpConfig.host,
+        port: activeFtpConfig.port,
+        secure: activeFtpConfig.secure
+      };
+      
+      // 根据用户类型设置用户名和密码
+      if (activeFtpConfig.userType === 'authenticated' && activeFtpConfig.user) {
+        connectParams.user = activeFtpConfig.user;
+        connectParams.password = activeFtpConfig.password;
+      } else {
+        connectParams.user = '';
+        connectParams.password = '';
+      }
+      
+      const resp = await ftpAPI.connect(connectParams);
+      if (resp?.success) {
+        setIsConnected(true);
+        toast.success('FTP 连接成功');
+        await loadDirectoryList('/');
+      } else {
+        toast.error(resp?.message || '连接失败');
+      }
+    } catch (error) {
+      toast.error('连接失败: ' + error.message);
+    } finally {
+      setConnecting(false);
     }
   };
 
@@ -577,43 +637,103 @@ const FTPTransferPage = () => {
       {/* 页面标题 */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">FTP文件传输</h1>
-        <Space>
-          {isConnected && (
-            <Button
-              type="primary"
-              danger
-              icon={<ExclamationCircleOutlined />}
-              onClick={handleDisconnect}
-            >
-              断开连接
-            </Button>
-          )}
-        </Space>
       </div>
 
-      {/* 连接状态提示 */}
-      <Card className="mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            {isConnected ? <CheckCircleOutlined style={{ color: '#3f8600', fontSize: '16px' }} /> : <ExclamationCircleOutlined style={{ color: '#cf1322', fontSize: '16px' }} />}
-            <span style={{ 
-              color: isConnected ? '#3f8600' : '#cf1322',
-              fontSize: '16px',
-              marginLeft: '8px'
-            }}>
-              {isConnected ? 'FTP已连接' : 'FTP未连接 - 请在系统设置中配置FTP连接'}
-            </span>
+      {/* FTP 配置卡片 */}
+      <Card title="FTP 连接配置" className="mb-6">
+        {loadingConfig ? (
+          <div className="text-center py-4">
+            <Spin size="large" />
+            <p className="mt-2 text-gray-500">加载配置中...</p>
           </div>
-          {isConnected && (
-            <Button
-              type="default"
-              icon={<ExclamationCircleOutlined />}
-              onClick={handleDisconnect}
-            >
-              断开连接
-            </Button>
-          )}
-        </div>
+        ) : activeFtpConfig ? (
+          <div>
+            <Row gutter={[16, 16]}>
+              <Col span={6}>
+                <div>
+                  <span className="text-gray-500">配置名称：</span>
+                  <span className="font-medium">{activeFtpConfig.name || '未命名'}</span>
+                </div>
+              </Col>
+              <Col span={6}>
+                <div>
+                  <span className="text-gray-500">主机：</span>
+                  <span className="font-medium">{activeFtpConfig.host}</span>
+                </div>
+              </Col>
+              <Col span={4}>
+                <div>
+                  <span className="text-gray-500">端口：</span>
+                  <span className="font-medium">{activeFtpConfig.port || 21}</span>
+                </div>
+              </Col>
+              <Col span={4}>
+                <div>
+                  <span className="text-gray-500">用户类型：</span>
+                  <Tag color={activeFtpConfig.userType === 'authenticated' ? 'blue' : 'orange'}>
+                    {activeFtpConfig.userType === 'authenticated' ? '普通用户' : '匿名用户'}
+                  </Tag>
+                </div>
+              </Col>
+              <Col span={4}>
+                <div>
+                  <span className="text-gray-500">FTPS：</span>
+                  <Tag color={activeFtpConfig.secure ? 'green' : 'default'}>
+                    {activeFtpConfig.secure ? '是' : '否'}
+                  </Tag>
+                </div>
+              </Col>
+            </Row>
+            
+            <div className="mt-4 flex justify-between items-center">
+              <div className="flex items-center">
+                {isConnected ? <CheckCircleOutlined style={{ color: '#3f8600', fontSize: '16px' }} /> : <ExclamationCircleOutlined style={{ color: '#cf1322', fontSize: '16px' }} />}
+                <span style={{ 
+                  color: isConnected ? '#3f8600' : '#cf1322',
+                  fontSize: '16px',
+                  marginLeft: '8px'
+                }}>
+                  {isConnected ? 'FTP已连接' : 'FTP未连接'}
+                </span>
+              </div>
+              
+              <Space>
+                {!isConnected ? (
+                  <Button
+                    type="primary"
+                    icon={<CheckCircleOutlined />}
+                    onClick={handleConnectFtp}
+                    loading={connecting}
+                  >
+                    连接 FTP
+                  </Button>
+                ) : (
+                  <Button
+                    type="default"
+                    icon={<ExclamationCircleOutlined />}
+                    onClick={handleDisconnect}
+                  >
+                    断开连接
+                  </Button>
+                )}
+                <Button
+                  type="default"
+                  icon={<ReloadOutlined />}
+                  onClick={loadActiveFtpConfig}
+                  loading={loadingConfig}
+                >
+                  刷新配置
+                </Button>
+              </Space>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-4">
+            <ExclamationCircleOutlined style={{ fontSize: '48px', color: '#ff4d4f' }} />
+            <p className="mt-2 text-gray-500">没有可用的 FTP 配置</p>
+            <p className="text-sm text-gray-400">请在系统设置中配置 FTP 连接</p>
+          </div>
+        )}
       </Card>
 
 
@@ -657,23 +777,14 @@ const FTPTransferPage = () => {
                 <Button
                   icon={<SyncOutlined />}
                   onClick={() => setSyncModalVisible(true)}
-                  disabled={!isConnected}
+                  title="同步文件到FTP（自动连接）"
                 >
                   同步文件
                 </Button>
               </Space>
             </div>
 
-            {!isConnected ? (
-              <Alert
-                message="未连接到FTP服务器"
-                description="请先连接FTP服务器才能进行文件操作"
-                type="warning"
-                showIcon
-              />
-            ) : (
-              <>
-                {/* 目录导航栏 */}
+            {/* 目录导航栏 */}
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
@@ -731,8 +842,6 @@ const FTPTransferPage = () => {
                   pagination={false}
                   size="small"
                 />
-              </>
-            )}
           </Card>
         </TabPane>
 

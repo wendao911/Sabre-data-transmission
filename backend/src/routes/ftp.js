@@ -529,69 +529,104 @@ router.post('/sync-encrypted', async (req, res) => {
   }
 });
 
+// 连接 FTP 的通用方法
+async function connectFTPWithActiveConfig() {
+  const FTPConfig = require('../models/FTPConfig');
+  const cfg = await FTPConfig.findOne({ status: 1 });
+  if (!cfg || !cfg.host) {
+    throw new Error('FTP 配置未设置或未激活');
+  }
+  
+  // 根据用户类型设置连接参数
+  const connectParams = {
+    host: cfg.host,
+    port: cfg.port,
+    secure: cfg.secure
+  };
+  
+  if (cfg.userType === 'authenticated' && cfg.user) {
+    connectParams.user = cfg.user;
+    connectParams.password = cfg.password;
+  } else {
+    connectParams.user = '';
+    connectParams.password = '';
+  }
+  
+  // 连接 FTP
+  const conn = await ftpService.connect(connectParams);
+  if (!conn.success) {
+    throw new Error('FTP 连接失败: ' + conn.message);
+  }
+  
+  return cfg;
+}
+
+// 文件传输的通用方法
+async function transferDecryptedFiles(date) {
+  if (!date || !/^\d{8}$/.test(date)) {
+    throw new Error('日期格式错误，应为YYYYMMDD');
+  }
+  
+  // 查找指定日期的解密文件
+  const projectRoot = path.join(__dirname, '..', '..', '..');
+  const decDir = path.join(projectRoot, 'Sabre Data Decryption', date);
+  
+  if (!fs.existsSync(decDir)) {
+    throw new Error('指定日期的解密文件目录不存在');
+  }
+  
+  // 递归获取目录下的所有文件，相对 decDir 的路径直接挂到 /{date}/ 下
+  const getAllFiles = (dir, basePath = '') => {
+    const files = [];
+    const items = fs.readdirSync(dir);
+    
+    for (const item of items) {
+      const fullPath = path.join(dir, item);
+      const relativePath = path.join(basePath, item);
+      
+      if (fs.statSync(fullPath).isDirectory()) {
+        files.push(...getAllFiles(fullPath, relativePath));
+      } else {
+        files.push({
+          localPath: fullPath,
+          remotePath: `/${date}/${relativePath}`
+        });
+      }
+    }
+    
+    return files;
+  };
+  
+  const files = getAllFiles(decDir);
+  
+  if (files.length === 0) {
+    return {
+      success: true,
+      message: '指定日期没有找到解密文件',
+      data: []
+    };
+  }
+  
+  // 批量上传文件
+  const result = await ftpService.uploadMultipleFiles(files);
+  
+  // 写入按日传输日志（全部文件上传都成功才 success，否则 fail）
+  try {
+    const successCount = Array.isArray(result.data) ? result.data.filter(r => r.success).length : 0;
+    const status = successCount === files.length ? 'success' : 'fail';
+    await logTransferDayResult(date, status);
+  } catch (_) {}
+  
+  return result;
+}
+
 // POST /api/ftp/sync-decrypted - 同步解密文件到FTP（保留日期，但去掉 'decrypted' 目录）
 router.post('/sync-decrypted', async (req, res) => {
   try {
-    const { date } = req.body; // 忽略 remoteDir，直接放在根下的 /{date}
+    const { date } = req.body;
     
-    if (!date || !/^\d{8}$/.test(date)) {
-      return res.status(400).json({
-        success: false,
-        error: '日期格式错误，应为YYYYMMDD'
-      });
-    }
-    
-    // 查找指定日期的解密文件
-    const projectRoot = path.join(__dirname, '..', '..', '..');
-    const decDir = path.join(projectRoot, 'Sabre Data Decryption', date);
-    
-    if (!fs.existsSync(decDir)) {
-      return res.status(404).json({
-        success: false,
-        error: '指定日期的解密文件目录不存在'
-      });
-    }
-    
-    // 递归获取目录下的所有文件，相对 decDir 的路径直接挂到 /{date}/ 下
-    const getAllFiles = (dir, basePath = '') => {
-      const files = [];
-      const items = fs.readdirSync(dir);
-      
-      for (const item of items) {
-        const fullPath = path.join(dir, item);
-        const relativePath = path.join(basePath, item);
-        
-        if (fs.statSync(fullPath).isDirectory()) {
-          files.push(...getAllFiles(fullPath, relativePath));
-        } else {
-          files.push({
-            localPath: fullPath,
-            remotePath: `/${date}/${relativePath}`
-          });
-        }
-      }
-      
-      return files;
-    };
-    
-    const files = getAllFiles(decDir);
-    
-    if (files.length === 0) {
-      return res.json({
-        success: true,
-        message: '指定日期没有找到解密文件',
-        data: []
-      });
-    }
-    
-    // 直接批量上传
-    const result = await ftpService.uploadMultipleFiles(files);
-    // 写入按日传输日志（全部文件上传都成功才 success，否则 fail）
-    try {
-      const successCount = Array.isArray(result.data) ? result.data.filter(r => r.success).length : 0;
-      const status = successCount === files.length ? 'success' : 'fail';
-      await logTransferDayResult(date, status);
-    } catch (_) {}
+    // 执行文件传输
+    const result = await transferDecryptedFiles(date);
     res.json(result);
   } catch (error) {
     res.status(500).json({
@@ -688,4 +723,9 @@ router.get('/download-stream', async (req, res) => {
   }
 });
 
-module.exports = router;
+// 导出通用方法供其他模块使用
+module.exports = {
+  router,
+  connectFTPWithActiveConfig,
+  transferDecryptedFiles
+};

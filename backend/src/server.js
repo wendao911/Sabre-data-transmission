@@ -33,7 +33,8 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/files', require('./routes/files'));
 app.use('/api/decrypt', require('./routes/decrypt'));
-app.use('/api/ftp', require('./routes/ftp'));
+const ftpRoutes = require('./routes/ftp');
+app.use('/api/ftp', ftpRoutes.router);
 app.use('/api/schedule', require('./routes/schedule'));
 
 // Health check endpoint

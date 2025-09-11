@@ -139,10 +139,31 @@ class FTPService {
   }
 
   /**
-   * 使用环境变量默认配置连接FTP服务器
+   * 使用状态为正在使用的 FTP 配置连接FTP服务器
    */
   async connectWithEnvConfig() {
-    return await this.connect();
+    const FTPConfig = require('../models/FTPConfig');
+    const cfg = await FTPConfig.findOne({ status: 1 });
+    if (!cfg || !cfg.host) {
+      return { success: false, message: 'FTP 配置未设置或未激活' };
+    }
+    
+    // 根据用户类型设置连接参数
+    const connectParams = {
+      host: cfg.host,
+      port: cfg.port,
+      secure: cfg.secure
+    };
+    
+    if (cfg.userType === 'authenticated' && cfg.user) {
+      connectParams.user = cfg.user;
+      connectParams.password = cfg.password;
+    } else {
+      connectParams.user = '';
+      connectParams.password = '';
+    }
+    
+    return await this.connect(connectParams);
   }
 
   /**

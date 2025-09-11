@@ -1,8 +1,7 @@
 const schedule = require('node-schedule');
 const ScheduleConfig = require('../models/ScheduleConfig');
-const FTPConfig = require('../models/FTPConfig');
 const decryptService = require('./decryptService');
-const ftpService = require('./ftpService');
+const { connectFTPWithActiveConfig, transferDecryptedFiles } = require('../routes/ftp');
 
 // 保存已启动的任务，key: taskType
 const jobs = new Map();
@@ -28,34 +27,14 @@ async function runTask(task) {
     // 如需实现“仅拷贝”可在此扩展（目前解密服务对非gpg是复制）
     await decryptService.decryptAllFiles(null, { date });
   } else if (taskType === 'transfer') {
-    // 从数据库读取 FTP 配置
-    const cfg = await FTPConfig.findOne({});
-    if (!cfg || !cfg.host) throw new Error('FTP 配置未设置');
-
-    // 连接 FTP（使用 DB 配置）
-    const conn = await ftpService.connect({
-      host: cfg.host,
-      port: cfg.port,
-      user: cfg.user,
-      password: cfg.password,
-      secure: cfg.secure
-    });
-    if (!conn.success) throw new Error('FTP 连接失败: ' + conn.message);
-
+    // 使用解耦后的方法
+    await connectFTPWithActiveConfig();
+    
     try {
-      // 复用现有按日同步接口逻辑：收集本地前一日解密目录下的文件并上传
-      const projectRoot = require('path').join(__dirname, '..', '..', '..');
-      const localDir = require('path').join(projectRoot, 'Sabre Data Decryption', date);
-      const fs = require('fs');
-      if (!fs.existsSync(localDir)) {
-        throw new Error(`本地解密目录不存在: ${localDir}`);
-      }
-      const files = fs.readdirSync(localDir).map(name => ({
-        localPath: require('path').join(localDir, name),
-        remotePath: `/${date}/${name}`
-      }));
-      await ftpService.uploadMultipleFiles(files);
+      // 执行文件传输
+      await transferDecryptedFiles(date);
     } finally {
+      const ftpService = require('./ftpService');
       await ftpService.disconnect();
     }
   }
