@@ -202,7 +202,7 @@ const FTPTransferPage = () => {
   // 返回上级目录
   const goToParentDirectory = () => {
     if (currentPath === '/' || currentPath === '') {
-      toast.info('已经在根目录');
+      toast.success('已经在根目录');
       return;
     }
     
@@ -430,6 +430,8 @@ const FTPTransferPage = () => {
     }
 
     setSyncLoading(true);
+    toast.success('开始同步文件...');
+    
     try {
       const dateStr = syncDate.format('YYYYMMDD');
       const result = syncType === 'encrypted' 
@@ -1022,6 +1024,7 @@ const FTPTransferPage = () => {
               placeholder="选择日期"
             />
           </Form.Item>
+          
           <Form.Item>
             <Space>
               <Button

@@ -627,6 +627,7 @@ router.post('/sync-decrypted', async (req, res) => {
     
     // 执行文件传输
     const result = await transferDecryptedFiles(date);
+    
     res.json(result);
   } catch (error) {
     res.status(500).json({
