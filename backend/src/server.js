@@ -4,6 +4,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const config = require('./config');
+const mongoose = require('mongoose');
+const schedulerService = require('./services/schedulerService');
 
 const app = express();
 const PORT = config.server.port;
@@ -32,6 +34,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/files', require('./routes/files'));
 app.use('/api/decrypt', require('./routes/decrypt'));
 app.use('/api/ftp', require('./routes/ftp'));
+app.use('/api/schedule', require('./routes/schedule'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -80,11 +83,38 @@ app.use('*', (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
-});
+// 连接 MongoDB 后再启动服务
+async function start() {
+  try {
+    // 使用写死的 URI 与基础连接选项
+    await mongoose.connect(config.database.uri, {
+      maxPoolSize: config.database.options.maxPoolSize,
+      minPoolSize: config.database.options.minPoolSize,
+      connectTimeoutMS: config.database.options.connectTimeoutMS,
+      socketTimeoutMS: config.database.options.socketTimeoutMS,
+      serverSelectionTimeoutMS: config.database.options.serverSelectionTimeoutMS
+    });
+    console.log('✅ 已连接 MongoDB');
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
+    });
+
+    // 初始化调度服务（读取DB配置并启动任务）
+    try {
+      await schedulerService.loadAndStartAll();
+      console.log('⏲️  定时任务已初始化');
+    } catch (e) {
+      console.error('定时任务初始化失败:', e.message);
+    }
+  } catch (err) {
+    console.error('❌ 连接 MongoDB 失败：', err);
+    process.exit(1);
+  }
+}
+
+start();
 
 module.exports = app;

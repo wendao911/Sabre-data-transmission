@@ -275,8 +275,8 @@ async function decryptAllFiles(progressCallback = null, options = {}) {
             throw new Error(`K6密码文件 ${k6PassphraseFile} 不存在`);
         }
         
-        // 获取输入文件，并按需过滤
-        let gpgFiles = getGpgFiles();
+        // 获取输入文件，并按需过滤（仅处理真正的 .gpg 加密文件）
+        let gpgFiles = getGpgFiles().filter(f => f.isGpg === true);
         if (options && options.date) {
             gpgFiles = gpgFiles.filter(f => f.date === options.date);
         }

@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const decryptService = require('../services/decryptService');
+const { extractDateFromFilename } = require('../services/decryptService');
+const { logDayResult, logFailedFiles } = require('../services/decryptLogService');
 
 // 存储活跃的SSE连接
 const sseConnections = new Set();
@@ -60,53 +62,80 @@ router.get('/progress', (req, res) => {
 router.post('/start', async (req, res) => {
     try {
         // 发送开始事件
-        broadcastProgress({
-            type: 'start',
-            message: '开始解密...',
-            timestamp: new Date().toISOString()
-        });
+        broadcastProgress({ type: 'start', message: '开始解密...', timestamp: new Date().toISOString() });
 
         const { date, month, filePath } = req.body || {};
 
-        const results = await decryptService.decryptAllFiles((progressData) => {
-            broadcastProgress(progressData);
-        }, { date, month, filePath });
-        
-        // 发送完成事件
+        // 计算需要处理的日期集合（仅 .gpg）
+        let datesToProcess = [];
+        const allFiles = decryptService.getGpgFiles().filter(f => f.isGpg === true);
+        if (date && /^\d{8}$/.test(String(date))) {
+            datesToProcess = [String(date)];
+        } else if (month && /^\d{6}$/.test(String(month))) {
+            const monthDates = new Set(allFiles.filter(f => typeof f.date === 'string' && f.date.startsWith(String(month))).map(f => f.date));
+            datesToProcess = Array.from(monthDates).sort();
+        } else if (filePath) {
+            // 尝试从文件名/路径提取日期
+            const filename = String(filePath).split(/[\\/]/).pop();
+            const inferredDate = extractDateFromFilename(filename);
+            if (inferredDate) {
+                datesToProcess = [inferredDate];
+            }
+        } else {
+            const allDatesSet = new Set(allFiles.map(f => f.date));
+            datesToProcess = Array.from(allDatesSet).sort();
+        }
+
+        if (datesToProcess.length === 0) {
+            broadcastProgress({ type: 'info', message: '没有找到需要解密的文件', timestamp: new Date().toISOString() });
+            return res.json({ success: true, data: { total: 0, success: 0, failed: 0, errors: [] } });
+        }
+
+        let grandTotal = 0;
+        let grandSuccess = 0;
+        const grandErrors = [];
+
+        for (const d of datesToProcess) {
+            broadcastProgress({ type: 'info', message: `开始处理日期 ${d} ...`, date: d, timestamp: new Date().toISOString() });
+
+            const options = filePath ? { date: d, filePath } : { date: d };
+            const dayResults = await decryptService.decryptAllFiles((progressData) => {
+                broadcastProgress({ ...progressData, date: d });
+            }, options);
+
+            grandTotal += dayResults.total;
+            grandSuccess += dayResults.success;
+            if (Array.isArray(dayResults.errors)) grandErrors.push(...dayResults.errors);
+
+            // 写入每日日志
+            const failedCount = dayResults.total - dayResults.success;
+            await logDayResult(d, failedCount === 0 ? 'success' : 'fail');
+            if (failedCount > 0 && Array.isArray(dayResults.errors) && dayResults.errors.length > 0) {
+                const failedFiles = dayResults.errors
+                    .map(e => {
+                        const m = String(e).match(/：(.+?)(\s|-|$)/);
+                        return m ? m[1] : null;
+                    })
+                    .filter(Boolean);
+                await logFailedFiles(d, failedFiles);
+            }
+
+            broadcastProgress({ type: 'info', message: `日期 ${d} 处理完成`, date: d, timestamp: new Date().toISOString() });
+        }
+
+        // 完成事件（汇总）
         broadcastProgress({
             type: 'complete',
-            message: '解密完成',
-            data: {
-                total: results.total,
-                success: results.success,
-                failed: results.total - results.success,
-                errors: results.errors
-            },
-            timestamp: new Date().toISOString()
-        });
-        
-        res.json({
-            success: true,
-            data: {
-                total: results.total,
-                success: results.success,
-                failed: results.total - results.success,
-                errors: results.errors
-            }
-        });
-    } catch (error) {
-        // 发送错误事件
-        broadcastProgress({
-            type: 'error',
-            message: '解密失败',
-            error: error.message,
+            message: '解密完成（按日汇总）',
+            data: { total: grandTotal, success: grandSuccess, failed: grandTotal - grandSuccess, errors: grandErrors },
             timestamp: new Date().toISOString()
         });
 
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        res.json({ success: true, data: { total: grandTotal, success: grandSuccess, failed: grandTotal - grandSuccess, errors: grandErrors } });
+    } catch (error) {
+        // 发送错误事件
+        broadcastProgress({ type: 'error', message: '解密失败', error: error.message, timestamp: new Date().toISOString() });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
@@ -128,6 +157,20 @@ router.post('/start-by-date', async (req, res) => {
             broadcastProgress(progressData);
         }, { date });
 
+        // 写入解密日志
+        const failedCount = results.total - results.success;
+        await logDayResult(date, failedCount === 0 ? 'success' : 'fail');
+        if (failedCount > 0 && Array.isArray(results.errors) && results.errors.length > 0) {
+            // 从错误信息中提取文件名
+            const failedFiles = results.errors
+                .map(e => {
+                    const m = String(e).match(/：(.+?)(\s|-|$)/); // 兼容“解密失败：文件名”或“... - 错误信息”
+                    return m ? m[1] : null;
+                })
+                .filter(Boolean);
+            await logFailedFiles(date, failedFiles);
+        }
+
         broadcastProgress({
             type: 'complete',
             message: `解密完成（日期 ${date}）`,
@@ -137,6 +180,11 @@ router.post('/start-by-date', async (req, res) => {
 
         res.json({ success: true, data: { total: results.total, success: results.success, failed: results.total - results.success, errors: results.errors } });
     } catch (error) {
+        // 写入失败日志（未知失败）
+        if (/^\d{8}$/.test((req.body && req.body.date) || req.query.date || '')) {
+            const dateForLog = (req.body && req.body.date) || req.query.date;
+            try { await logDayResult(dateForLog, 'fail'); } catch (_) {}
+        }
         broadcastProgress({ type: 'error', message: '解密失败', error: error.message, timestamp: new Date().toISOString() });
         res.status(500).json({ success: false, error: error.message });
     }
@@ -156,18 +204,51 @@ router.post('/start-by-month', async (req, res) => {
 
         broadcastProgress({ type: 'start', message: `开始解密月份 ${month} 的文件...`, timestamp: new Date().toISOString() });
 
-        const results = await decryptService.decryptAllFiles((progressData) => {
-            broadcastProgress(progressData);
-        }, { month });
+        // 找出该月份涉及的所有日期
+        const allFiles = decryptService.getGpgFiles().filter(f => f.isGpg === true);
+        const monthDates = Array.from(new Set(allFiles
+            .filter(f => typeof f.date === 'string' && f.date.startsWith(month))
+            .map(f => f.date))
+        ).sort();
 
-        broadcastProgress({
-            type: 'complete',
-            message: `解密完成（月份 ${month}）`,
-            data: { total: results.total, success: results.success, failed: results.total - results.success, errors: results.errors },
-            timestamp: new Date().toISOString()
-        });
+        if (monthDates.length === 0) {
+            broadcastProgress({ type: 'info', message: `月份 ${month} 下没有需要解密的文件`, timestamp: new Date().toISOString() });
+            return res.json({ success: true, data: { total: 0, success: 0, failed: 0, errors: [] } });
+        }
 
-        res.json({ success: true, data: { total: results.total, success: results.success, failed: results.total - results.success, errors: results.errors } });
+        let grandTotal = 0;
+        let grandSuccess = 0;
+        const grandErrors = [];
+
+        for (const d of monthDates) {
+            broadcastProgress({ type: 'info', message: `开始处理日期 ${d} ...`, date: d, timestamp: new Date().toISOString() });
+
+            const dayResults = await decryptService.decryptAllFiles((progressData) => {
+                broadcastProgress({ ...progressData, date: d });
+            }, { date: d });
+
+            grandTotal += dayResults.total;
+            grandSuccess += dayResults.success;
+            if (Array.isArray(dayResults.errors)) grandErrors.push(...dayResults.errors);
+
+            // 写入每日日志
+            const failedCount = dayResults.total - dayResults.success;
+            await logDayResult(d, failedCount === 0 ? 'success' : 'fail');
+            if (failedCount > 0 && Array.isArray(dayResults.errors) && dayResults.errors.length > 0) {
+                const failedFiles = dayResults.errors
+                    .map(e => {
+                        const m = String(e).match(/：(.+?)(\s|-|$)/);
+                        return m ? m[1] : null;
+                    })
+                    .filter(Boolean);
+                await logFailedFiles(d, failedFiles);
+            }
+
+            broadcastProgress({ type: 'info', message: `日期 ${d} 处理完成`, date: d, timestamp: new Date().toISOString() });
+        }
+
+        broadcastProgress({ type: 'complete', message: `解密完成（月份 ${month}，按日汇总）`, data: { total: grandTotal, success: grandSuccess, failed: grandTotal - grandSuccess, errors: grandErrors }, timestamp: new Date().toISOString() });
+        res.json({ success: true, data: { total: grandTotal, success: grandSuccess, failed: grandTotal - grandSuccess, errors: grandErrors } });
     } catch (error) {
         broadcastProgress({ type: 'error', message: '解密失败', error: error.message, timestamp: new Date().toISOString() });
         res.status(500).json({ success: false, error: error.message });

@@ -366,3 +366,22 @@ export const ftpAPI = {
     document.body.removeChild(a);
   },
 };
+
+// Schedule API
+export const scheduleAPI = {
+  getConfigs: () => apiClient.client.get('/schedule/').then(r => r.data?.data || []),
+  update: ({ taskType, cron, enabled, params }) => apiClient.client.post('/schedule/update', { taskType, cron, enabled, params }).then(r => r.data),
+  run: ({ taskType, offsetDays = 1 }) => apiClient.client.post('/schedule/run', { taskType, offsetDays }).then(r => r.data),
+  
+  // FTP 配置管理
+  getFtpConfigs: () => apiClient.client.get('/schedule/ftp-config').then(r => r.data),
+  getActiveFtpConfig: () => apiClient.client.get('/schedule/ftp-config/active').then(r => r.data),
+  createFtpConfig: (payload) => apiClient.client.post('/schedule/ftp-config', payload).then(r => r.data),
+  updateFtpConfig: (id, payload) => apiClient.client.put(`/schedule/ftp-config/${id}`, payload).then(r => r.data),
+  activateFtpConfig: (id) => apiClient.client.post(`/schedule/ftp-config/${id}/activate`).then(r => r.data),
+  deleteFtpConfig: (id) => apiClient.client.delete(`/schedule/ftp-config/${id}`).then(r => r.data),
+  
+  // 兼容旧版本
+  getFtpConfig: () => apiClient.client.get('/schedule/ftp-config/active').then(r => r.data),
+  saveFtpConfig: (payload) => apiClient.client.post('/schedule/ftp-config', payload).then(r => r.data)
+};

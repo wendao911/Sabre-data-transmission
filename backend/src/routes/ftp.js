@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const { logTransferDayResult } = require('../services/transferLogService');
 const fs = require('fs');
 const { body, query, validationResult } = require('express-validator');
 const ftpService = require('../services/ftpService');
@@ -585,6 +586,12 @@ router.post('/sync-decrypted', async (req, res) => {
     
     // 直接批量上传
     const result = await ftpService.uploadMultipleFiles(files);
+    // 写入按日传输日志（全部文件上传都成功才 success，否则 fail）
+    try {
+      const successCount = Array.isArray(result.data) ? result.data.filter(r => r.success).length : 0;
+      const status = successCount === files.length ? 'success' : 'fail';
+      await logTransferDayResult(date, status);
+    } catch (_) {}
     res.json(result);
   } catch (error) {
     res.status(500).json({

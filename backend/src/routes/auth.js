@@ -3,18 +3,10 @@ const { body, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
+const User = require('../models/User');
+const config = require('../config');
 
-// Mock user data (replace with database in production)
-const users = [
-  {
-    id: 1,
-    email: 'leo.liu@aircambodia.com',
-    // Default password: K6ITD2025 (hashed at runtime)
-    password: bcrypt.hashSync('K6ITD2025', 10),
-    name: 'Leo',
-    role: 'admin'
-  }
-];
+// 使用 MongoDB 存储用户，不再使用内存数据
 
 // Register endpoint
 router.post('/register', [
@@ -30,41 +22,38 @@ router.post('/register', [
 
     const { email, password, name } = req.body;
 
-    // Check if user already exists
-    const existingUser = users.find(user => user.email === email);
+    // 检查用户是否已存在
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Hash password
+    // 哈希密码
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
-    const newUser = {
-      id: users.length + 1,
+    // 创建用户
+    const created = await User.create({
       email,
       password: hashedPassword,
       name,
       role: 'user'
-    };
+    });
 
-    users.push(newUser);
-
-    // Generate JWT token
+    // 生成 JWT
     const token = jwt.sign(
-      { userId: newUser.id, email: newUser.email, role: newUser.role },
-      process.env.JWT_SECRET || 'fallback_secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { userId: created._id.toString(), email: created.email, role: created.role },
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiresIn }
     );
 
     res.status(201).json({
       message: 'User created successfully',
       token,
       user: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-        role: newUser.role
+        id: created._id.toString(),
+        email: created.email,
+        name: created.name,
+        role: created.role
       }
     });
   } catch (error) {
@@ -86,30 +75,30 @@ router.post('/login', [
 
     const { email, password } = req.body;
 
-    // Find user
-    const user = users.find(u => u.email === email);
+    // 查找用户
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check password
+    // 校验密码
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+    // 生成 JWT
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'fallback_secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { userId: user._id.toString(), email: user.email, role: user.role },
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiresIn }
     );
 
     res.json({
       message: 'Login successful',
       token,
       user: {
-        id: user.id,
+        id: user._id.toString(),
         email: user.email,
         name: user.name,
         role: user.role
@@ -122,7 +111,7 @@ router.post('/login', [
 });
 
 // Verify token endpoint
-router.get('/verify', (req, res) => {
+router.get('/verify', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
   
   if (!token) {
@@ -130,8 +119,8 @@ router.get('/verify', (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-    const user = users.find(u => u.id === decoded.userId);
+    const decoded = jwt.verify(token, config.jwt.secret);
+    const user = await User.findById(decoded.userId);
     
     if (!user) {
       return res.status(401).json({ error: 'Invalid token' });
@@ -140,7 +129,7 @@ router.get('/verify', (req, res) => {
     res.json({
       valid: true,
       user: {
-        id: user.id,
+        id: user._id.toString(),
         email: user.email,
         name: user.name,
         role: user.role

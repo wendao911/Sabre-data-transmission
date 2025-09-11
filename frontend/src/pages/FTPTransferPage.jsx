@@ -47,18 +47,6 @@ const { TextArea } = Input;
 const FTPTransferPage = () => {
   // 连接状态
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionLoading, setConnectionLoading] = useState(false);
-  const [userType, setUserType] = useState('authenticated'); // 'anonymous' 或 'authenticated'
-  const [ftpConfig, setFtpConfig] = useState({
-    host: '',
-    port: 21,
-    user: '',
-    password: '',
-    secure: false,
-  });
-  
-  // 表单实例
-  const [form] = Form.useForm();
 
   // 目录和文件管理
   const [currentPath, setCurrentPath] = useState('/');
@@ -92,55 +80,7 @@ const FTPTransferPage = () => {
   // 检查连接状态
   useEffect(() => {
     checkConnectionStatus();
-    loadBackendConfig();
   }, []);
-
-  // 加载后端配置
-  const loadBackendConfig = async () => {
-    try {
-      const result = await ftpAPI.getConfig();
-      if (result.success) {
-        const config = {
-          host: result.data.host || '',
-          port: result.data.port || 21,
-          user: result.data.user || '',
-          password: result.data.password || '',
-          secure: result.data.secure || false
-        };
-        
-        // 更新状态
-        setFtpConfig(config);
-        
-        // 更新表单值
-        form.setFieldsValue(config);
-        
-        // 默认设置为普通用户，除非后端配置中用户名为空
-        if (result.data.user && result.data.user.trim() !== '') {
-          setUserType('authenticated');
-        } else {
-          // 即使后端用户名为空，也默认使用普通用户模式
-          setUserType('authenticated');
-        }
-      }
-    } catch (error) {
-      console.error('加载后端配置失败:', error);
-    }
-  };
-
-  // 处理用户类型切换
-  const handleUserTypeChange = (value) => {
-    setUserType(value);
-    if (value === 'anonymous') {
-      // 切换到匿名用户时，清空用户名和密码
-      const newConfig = {
-        ...ftpConfig,
-        user: '',
-        password: ''
-      };
-      setFtpConfig(newConfig);
-      form.setFieldsValue(newConfig);
-    }
-  };
 
   // 检查连接状态
   const checkConnectionStatus = async () => {
@@ -152,40 +92,7 @@ const FTPTransferPage = () => {
     }
   };
 
-  // 连接FTP服务器
-  const handleConnect = async (values) => {
-    setConnectionLoading(true);
-    try {
-      // 根据用户类型构建连接参数
-      const connectParams = {
-        host: values.host,
-        port: values.port,
-        secure: values.secure
-      };
-      
-      // 只有普通用户才添加用户名和密码
-      if (userType === 'authenticated') {
-        connectParams.user = values.user;
-        connectParams.password = values.password;
-      }
-      
-      const result = await ftpAPI.connect(connectParams);
-      if (result.success) {
-        setIsConnected(true);
-        toast.success('FTP连接成功');
-        await loadDirectoryList('/');
-      } else {
-        toast.error(result.message || '连接失败');
-      }
-    } catch (error) {
-      toast.error('连接失败: ' + error.message);
-    } finally {
-      setConnectionLoading(false);
-    }
-  };
-
-
-  // 断开连接
+  // 断开FTP连接
   const handleDisconnect = async () => {
     try {
       const result = await ftpAPI.disconnect();
@@ -199,6 +106,8 @@ const FTPTransferPage = () => {
       toast.error('断开连接失败: ' + error.message);
     }
   };
+
+
 
   // 加载目录列表
   const loadDirectoryList = async (path = currentPath) => {
@@ -682,111 +591,29 @@ const FTPTransferPage = () => {
         </Space>
       </div>
 
-      {/* FTP连接配置 */}
-      <Card 
-        title="FTP连接配置" 
-        className="mb-6"
-        extra={
+      {/* 连接状态提示 */}
+      <Card className="mb-6">
+        <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <div className="flex items-center">
-              {isConnected ? <CheckCircleOutlined style={{ color: '#3f8600', fontSize: '16px' }} /> : <ExclamationCircleOutlined style={{ color: '#cf1322', fontSize: '16px' }} />}
-              <span style={{ 
-                color: isConnected ? '#3f8600' : '#cf1322',
-                fontSize: '16px',
-                marginLeft: '8px'
-              }}>
-                {isConnected ? '已连接' : '未连接'}
-              </span>
-            </div>
+            {isConnected ? <CheckCircleOutlined style={{ color: '#3f8600', fontSize: '16px' }} /> : <ExclamationCircleOutlined style={{ color: '#cf1322', fontSize: '16px' }} />}
+            <span style={{ 
+              color: isConnected ? '#3f8600' : '#cf1322',
+              fontSize: '16px',
+              marginLeft: '8px'
+            }}>
+              {isConnected ? 'FTP已连接' : 'FTP未连接 - 请在系统设置中配置FTP连接'}
+            </span>
           </div>
-        }
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleConnect}
-        >
-          <Row gutter={16}>
-            <Col span={6}>
-              <Form.Item
-                label="服务器地址"
-                name="host"
-                rules={[{ required: true, message: '请输入服务器地址' }]}
-              >
-                <Input placeholder="ftp.example.com" disabled={isConnected} />
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item
-                label="端口"
-                name="port"
-                rules={[{ required: true, message: '请输入端口号' }]}
-              >
-                <Input type="number" placeholder="21" disabled={isConnected} />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item
-                label="用户类型"
-                name="userType"
-                initialValue={userType}
-              >
-                <Select onChange={handleUserTypeChange} disabled={isConnected}>
-                  <Option value="anonymous">匿名用户</Option>
-                  <Option value="authenticated">普通用户</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item
-                label="安全连接"
-                name="secure"
-                valuePropName="checked"
-              >
-                <Select disabled={isConnected}>
-                  <Option value={false}>否</Option>
-                  <Option value={true}>是</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Form.Item label=" ">
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={connectionLoading}
-                  icon={<CheckCircleOutlined />}
-                  disabled={isConnected}
-                >
-                  连接
-                </Button>
-              </Form.Item>
-            </Col>
-          </Row>
-          
-          {userType === 'authenticated' && (
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  label="用户名"
-                  name="user"
-                  rules={[{ required: true, message: '请输入用户名' }]}
-                >
-                  <Input placeholder="用户名" disabled={isConnected} />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label="密码"
-                  name="password"
-                  rules={[{ required: true, message: '请输入密码' }]}
-                >
-                  <Input.Password placeholder="密码" disabled={isConnected} />
-                </Form.Item>
-              </Col>
-            </Row>
+          {isConnected && (
+            <Button
+              type="default"
+              icon={<ExclamationCircleOutlined />}
+              onClick={handleDisconnect}
+            >
+              断开连接
+            </Button>
           )}
-        </Form>
+        </div>
       </Card>
 
 
