@@ -5,37 +5,40 @@ const morgan = require('morgan');
 const path = require('path');
 const config = require('./config');
 const mongoose = require('mongoose');
-const schedulerService = require('./services/schedulerService');
+const schedulerService = require('./modules/schedule/services');
 
 const app = express();
+const ENV = config.server.nodeEnv || process.env.NODE_ENV || 'development';
 const PORT = config.server.port;
 
 // Middleware
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(cors({
-  origin: [
-    config.cors.origin,
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001'
-  ],
+  origin: (
+    ENV === 'development'
+      ? [config.cors.origin, 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001']
+      : [config.cors.origin]
+  ).filter(Boolean),
   credentials: true
 }));
-app.use(morgan('combined'));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+if (ENV !== 'test') {
+  app.use(morgan('combined'));
+}
+const jsonLimit = Math.max(1, Math.ceil(((config.file && config.file.maxSize) ? config.file.maxSize : 10485760) / (1024 * 1024))) + 'mb';
+app.use(express.json({ limit: jsonLimit }));
+app.use(express.urlencoded({ extended: true, limit: jsonLimit }));
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/files', require('./routes/files'));
-app.use('/api/decrypt', require('./routes/decrypt'));
-const ftpRoutes = require('./routes/ftp');
-app.use('/api/ftp', ftpRoutes.router);
-app.use('/api/schedule', require('./routes/schedule'));
+app.use('/api/auth', require('./modules/auth/routes'));
+app.use('/api/users', require('./modules/users/routes'));
+app.use('/api/files', require('./modules/files/routes'));
+app.use('/api/decrypt', require('./modules/decrypt/routes'));
+app.use('/api/sftp', require('./modules/sftp/routes'));
+app.use('/api/schedule', require('./modules/schedule/routes'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -51,14 +54,7 @@ app.get('/api/config-check', (req, res) => {
   res.json({
     success: true,
     data: {
-      server: config.server,
-      ftp: {
-        host: config.ftp.host,
-        port: config.ftp.port,
-        user: config.ftp.user,
-        password: config.ftp.password ? '***' : 'undefined',
-        secure: config.ftp.secure
-      },
+      server: { ...config.server, nodeEnv: ENV },
       file: config.file,
       database: {
         uri: config.database.uri ? '***' : 'undefined'
@@ -85,6 +81,7 @@ app.use('*', (req, res) => {
 });
 
 // 连接 MongoDB 后再启动服务
+let server;
 async function start() {
   try {
     // 使用写死的 URI 与基础连接选项
@@ -97,9 +94,9 @@ async function start() {
     });
     console.log('✅ 已连接 MongoDB');
 
-    app.listen(PORT, () => {
+    server = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📊 Environment: ${ENV}`);
       console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
     });
 
@@ -119,3 +116,21 @@ async function start() {
 start();
 
 module.exports = app;
+
+// Graceful shutdown
+async function shutdown(signal) {
+  try {
+    console.log(`\n${signal} received. Shutting down...`);
+    if (server && server.close) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+    try { await mongoose.disconnect(); } catch (_) {}
+    process.exit(0);
+  } catch (e) {
+    console.error('Error during shutdown:', e);
+    process.exit(1);
+  }
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));

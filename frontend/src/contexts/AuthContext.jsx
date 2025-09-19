@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authAPI } from '../services/api';
+import { authService } from '../services';
 
 const AuthContext = createContext();
 
@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(true);
       const token = localStorage.getItem('auth_token');
       if (token) {
-        const userData = await authAPI.verifyToken(token);
+        const userData = await authService.verifyToken(token);
         if (userData) {
           setUser(userData);
         } else {
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback(async (email, password) => {
     try {
-      const response = await authAPI.login(email, password);
+      const response = await authService.login(email, password);
       localStorage.setItem('auth_token', response.token);
       setUser(response.user);
       return { success: true };
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = useCallback(async (name, email, password) => {
     try {
-      const response = await authAPI.register(name, email, password);
+      const response = await authService.register(name, email, password);
       localStorage.setItem('auth_token', response.token);
       setUser(response.user);
       return { success: true };

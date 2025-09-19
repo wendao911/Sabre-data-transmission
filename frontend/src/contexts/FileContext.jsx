@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { fileAPI } from '../services/api';
+import { fileService } from '../services';
 
 const FileContext = createContext();
 
@@ -20,7 +20,7 @@ export const FileProvider = ({ children }) => {
   const loadFiles = useCallback(async () => {
     try {
       setIsLoading(true);
-      const filesData = await fileAPI.getFiles();
+      const filesData = await fileService.getFiles();
       setFiles(filesData || []);
     } catch (error) {
       console.error('Failed to load files:', error);
@@ -31,7 +31,7 @@ export const FileProvider = ({ children }) => {
 
   const uploadFile = useCallback(async (file) => {
     try {
-      const uploadedFile = await fileAPI.uploadFile(file);
+      const uploadedFile = await fileService.uploadFile(file);
       setFiles(prev => [uploadedFile, ...prev]);
       return true;
     } catch (error) {
@@ -42,7 +42,7 @@ export const FileProvider = ({ children }) => {
 
   const deleteFile = useCallback(async (fileId) => {
     try {
-      await fileAPI.deleteFile(fileId);
+      await fileService.deleteFile(fileId);
       setFiles(prev => prev.filter(file => file.id !== fileId));
       return true;
     } catch (error) {
@@ -53,7 +53,7 @@ export const FileProvider = ({ children }) => {
 
   const downloadFile = useCallback(async (fileId) => {
     try {
-      const blob = await fileAPI.downloadFile(fileId);
+      const blob = await fileService.downloadFile(fileId);
       // 创建下载链接
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');

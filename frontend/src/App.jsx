@@ -11,8 +11,10 @@ import SplashScreen from './pages/SplashScreen';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import FileManagementPage from './pages/FileManagementPage';
-import FTPTransferPage from './pages/FTPTransferPage';
-import SettingsPage from './pages/SettingsPage';
+import SFTPTransferPage from './pages/SFTPTransferPage';
+import SFTPConnectionConfigPage from './pages/SFTPConnectionConfigPage';
+import ScheduledTaskConfigPage from './pages/ScheduledTaskConfigPage';
+import FileMappingConfigPage from './pages/FileMappingConfigPage';
 import AboutPage from './pages/AboutPage';
 import DecryptPage from './pages/DecryptPage';
 import './index.css';
@@ -73,8 +75,10 @@ function AppContent() {
                   <Route path="/" element={<HomePage />} />
                   <Route path="/files" element={<FileManagementPage />} />
                   <Route path="/decrypt" element={<DecryptPage />} />
-                  <Route path="/ftp" element={<FTPTransferPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/sftp" element={<SFTPTransferPage />} />
+                  <Route path="/system-config/sftp-connection" element={<SFTPConnectionConfigPage />} />
+                  <Route path="/system-config/scheduled-task" element={<ScheduledTaskConfigPage />} />
+                  <Route path="/system-config/file-mapping" element={<FileMappingConfigPage />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
