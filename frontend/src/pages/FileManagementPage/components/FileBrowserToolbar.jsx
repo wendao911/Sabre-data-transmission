@@ -12,6 +12,7 @@ import {
   PlusOutlined,
   UploadOutlined
 } from '@ant-design/icons';
+import { useLanguage } from '../hooks/useLanguage';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -33,10 +34,12 @@ const FileBrowserToolbar = ({
   onCreateDirectory,
   onUpload
 }) => {
+  const { t } = useLanguage();
+  
   const sortOptions = [
-    { value: 'name', label: '按名称' },
-    { value: 'size', label: '按大小' },
-    { value: 'date', label: '按日期' }
+    { value: 'name', label: t('sortOptions.name') },
+    { value: 'size', label: t('sortOptions.size') },
+    { value: 'date', label: t('sortOptions.date') }
   ];
 
   // 构建面包屑导航
@@ -49,7 +52,7 @@ const FileBrowserToolbar = ({
           onClick={onNavigateToRoot}
           className="!p-0"
         >
-          根目录
+          {t('breadcrumb.root')}
         </Button>
       )
     }
@@ -79,7 +82,7 @@ const FileBrowserToolbar = ({
       <div className="flex items-center justify-between">
         <Breadcrumb items={breadcrumbItems} />
         <Space>
-          <Tooltip title="创建新目录">
+          <Tooltip title={t('toolbar.createDirectory')}>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -87,21 +90,21 @@ const FileBrowserToolbar = ({
               size="middle"
             />
           </Tooltip>
-          <Tooltip title="上传文件">
+          <Tooltip title={t('toolbar.uploadFile')}>
             <Button
               icon={<UploadOutlined />}
               onClick={onUpload}
               size="middle"
             />
           </Tooltip>
-          <Tooltip title="刷新当前目录">
+          <Tooltip title={t('toolbar.refresh')}>
             <Button
               icon={<ReloadOutlined />}
               onClick={onRefresh}
               size="middle"
             />
           </Tooltip>
-          <Tooltip title="返回上级目录">
+          <Tooltip title={t('toolbar.backToParent')}>
             <Button
               icon={<ArrowLeftOutlined />}
               onClick={onNavigateToParent}
@@ -109,7 +112,7 @@ const FileBrowserToolbar = ({
               size="middle"
             />
           </Tooltip>
-          <Tooltip title="返回根目录">
+          <Tooltip title={t('toolbar.backToRoot')}>
             <Button
               icon={<HomeOutlined />}
               onClick={onNavigateToRoot}
@@ -124,7 +127,7 @@ const FileBrowserToolbar = ({
         {/* 搜索框 */}
         <div className="flex-1 min-w-0">
           <Search
-            placeholder="搜索文件..."
+            placeholder={t('toolbar.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             onSearch={onSearchChange}
@@ -150,7 +153,7 @@ const FileBrowserToolbar = ({
           </Select>
 
           {/* 排序顺序切换 */}
-          <Tooltip title={sortOrder === 'asc' ? '升序' : '降序'}>
+          <Tooltip title={sortOrder === 'asc' ? t('sortOrderOptions.asc') : t('sortOrderOptions.desc')}>
             <Button
               icon={sortOrder === 'asc' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
               onClick={() => onSort(sortBy)}
@@ -159,7 +162,7 @@ const FileBrowserToolbar = ({
           </Tooltip>
 
           {/* 显示隐藏文件切换 */}
-          <Tooltip title={showHidden ? '隐藏系统文件' : '显示系统文件'}>
+          <Tooltip title={t('toolbar.showHidden')}>
             <Button
               icon={showHidden ? <EyeInvisibleOutlined /> : <EyeOutlined />}
               onClick={onToggleHidden}

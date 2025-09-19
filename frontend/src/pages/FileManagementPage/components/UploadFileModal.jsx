@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Modal, Form, Input, Upload, Select } from 'antd';
 import { InboxOutlined } from '@ant-design/icons';
+import { useLanguage } from '../hooks/useLanguage';
 
 const { Dragger } = Upload;
 const { Option } = Select;
@@ -12,6 +13,7 @@ const UploadFileModal = ({
   currentPath,
   pathOptions = []
 }) => {
+  const { t } = useLanguage();
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -70,20 +72,20 @@ const UploadFileModal = ({
 
   return (
     <Modal
-      title="上传文件"
+      title={t('uploadFile.title')}
       open={visible}
       onOk={handleOk}
       onCancel={handleCancel}
-      okText="上传"
-      cancelText="取消"
+      okText={t('uploadFile.upload')}
+      cancelText={t('uploadFile.cancel')}
       confirmLoading={submitting}
       destroyOnClose
     >
       <Form form={form} layout="vertical" initialValues={{ targetPath: currentPath }}>
         <Form.Item
           name="file"
-          label="选择文件"
-          rules={[{ required: true, message: '请选择要上传的文件' }]}
+          label={t('uploadFile.selectFile')}
+          rules={[{ required: true, message: t('uploadFile.validation.fileRequired') }]}
           valuePropName="fileList"
           getValueFromEvent={({ fileList: fl }) => fl}
         >
@@ -107,17 +109,17 @@ const UploadFileModal = ({
             <p className="ant-upload-drag-icon">
               <InboxOutlined />
             </p>
-            <p className="ant-upload-text">点击或拖拽文件到此处上传</p>
-            <p className="ant-upload-hint">仅上传单个文件，文件名可在下方修改</p>
+            <p className="ant-upload-text">{t('uploadFile.selectFileDescription')}</p>
+            <p className="ant-upload-hint">{t('uploadFile.selectFileHint')}</p>
           </Dragger>
         </Form.Item>
 
-        <Form.Item name="targetPath" label="目标目录">
-          <Input placeholder="默认当前目录" value={currentPath} />
+        <Form.Item name="targetPath" label={t('uploadFile.targetDirectory')}>
+          <Input placeholder={t('uploadFile.targetDirectoryPlaceholder')} value={currentPath} />
         </Form.Item>
 
-        <Form.Item name="baseName" label={`文件名（将保留源后缀 ${sourceExt || ''}）`} initialValue={defaultBaseName}>
-          <Input placeholder="不含扩展名，留空则使用所选文件名" />
+        <Form.Item name="baseName" label={`${t('uploadFile.fileName')}（将保留源后缀 ${sourceExt || ''}）`} initialValue={defaultBaseName}>
+          <Input placeholder={t('uploadFile.fileNamePlaceholder')} />
         </Form.Item>
       </Form>
     </Modal>

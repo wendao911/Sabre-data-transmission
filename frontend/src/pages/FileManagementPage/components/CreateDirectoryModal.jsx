@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Modal, Form, Input, message } from 'antd';
+import { useLanguage } from '../hooks/useLanguage';
 
 const CreateDirectoryModal = ({ visible, onCancel, onConfirm, currentPath }) => {
+  const { t } = useLanguage();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -24,13 +26,13 @@ const CreateDirectoryModal = ({ visible, onCancel, onConfirm, currentPath }) => 
 
   return (
     <Modal
-      title="创建新目录"
+      title={t('createDirectory.title')}
       open={visible}
       onOk={handleOk}
       onCancel={handleCancel}
       confirmLoading={loading}
-      okText="创建"
-      cancelText="取消"
+      okText={t('createDirectory.create')}
+      cancelText={t('createDirectory.cancel')}
     >
       <Form
         form={form}
@@ -38,7 +40,7 @@ const CreateDirectoryModal = ({ visible, onCancel, onConfirm, currentPath }) => 
         requiredMark={false}
       >
         <Form.Item
-          label="当前路径"
+          label={t('createDirectory.currentPath')}
           extra={`将在 ${currentPath || '根目录'} 下创建新目录`}
         >
           <Input
@@ -50,21 +52,21 @@ const CreateDirectoryModal = ({ visible, onCancel, onConfirm, currentPath }) => 
         
         <Form.Item
           name="directoryName"
-          label="目录名称"
+          label={t('createDirectory.directoryName')}
           rules={[
-            { required: true, message: '请输入目录名称' },
+            { required: true, message: t('createDirectory.validation.required') },
             { 
               pattern: /^[^<>:"/\\|?*]+$/, 
-              message: '目录名称不能包含特殊字符 < > : " / \\ | ? *' 
+              message: t('createDirectory.validation.invalidChars')
             },
             { 
               max: 255, 
-              message: '目录名称不能超过255个字符' 
+              message: t('createDirectory.validation.maxLength')
             }
           ]}
         >
           <Input
-            placeholder="请输入新目录名称"
+            placeholder={t('createDirectory.directoryNamePlaceholder')}
             autoFocus
             onPressEnter={handleOk}
           />

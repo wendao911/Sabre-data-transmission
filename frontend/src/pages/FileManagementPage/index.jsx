@@ -6,10 +6,12 @@ import FileBrowserToolbar from './components/FileBrowserToolbar';
 import FileBrowserList from './components/FileBrowserList';
 import CreateDirectoryModal from './components/CreateDirectoryModal';
 import UploadFileModal from './components/UploadFileModal';
+import { useLanguage } from './hooks/useLanguage';
 
 const { Title, Paragraph } = Typography;
 
 const FileManagementPage = () => {
+  const { t } = useLanguage();
   const {
     files,
     loading,
@@ -46,9 +48,9 @@ const FileManagementPage = () => {
       <div className="flex items-center space-x-3">
         <FolderOutlined className="text-2xl text-blue-600" />
         <div>
-          <Title level={2} className="!mb-0">文件浏览器</Title>
+          <Title level={2} className="!mb-0">{t('pageTitle')}</Title>
           <Paragraph className="!mb-0 text-gray-600">
-            当前路径: {currentPath || '/'}
+            {t('pageDescription')} - 当前路径: {currentPath || '/'}
           </Paragraph>
         </div>
       </div>
