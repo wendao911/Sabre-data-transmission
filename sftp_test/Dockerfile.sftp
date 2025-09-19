@@ -1,0 +1,29 @@
+# 自定义SFTP服务器Dockerfile
+FROM atmoz/sftp:alpine
+
+# 设置环境变量
+ENV SFTP_USERS="testuser:password:1001:1001:uploads,admin:admin123:1002:1002:uploads"
+
+# 创建测试目录结构
+RUN mkdir -p /home/testuser/uploads/test-files \
+    && mkdir -p /home/testuser/uploads/encrypted \
+    && mkdir -p /home/testuser/uploads/decrypted \
+    && mkdir -p /home/admin/uploads/admin-files
+
+# 创建一些测试文件
+RUN echo "Hello SFTP World!" > /home/testuser/uploads/test-files/hello.txt \
+    && echo "Test encrypted file" > /home/testuser/uploads/encrypted/test-encrypted.txt \
+    && echo "Test decrypted file" > /home/testuser/uploads/decrypted/test-decrypted.txt \
+    && echo "Admin test file" > /home/admin/uploads/admin-files/admin-test.txt
+
+# 设置权限
+RUN chown -R testuser:testuser /home/testuser/uploads \
+    && chown -R admin:admin /home/admin/uploads \
+    && chmod -R 755 /home/testuser/uploads \
+    && chmod -R 755 /home/admin/uploads
+
+# 暴露SSH端口
+EXPOSE 22
+
+# 启动命令
+CMD ["testuser:password:1001:1001:uploads", "admin:admin123:1002:1002:uploads"]

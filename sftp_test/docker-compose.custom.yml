@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  custom-sftp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.sftp
+    container_name: custom-sftp-server
+    ports:
+      - "2222:22"
+    volumes:
+      - ./sftp-data:/home/testuser/uploads
+      - ./sftp-admin-data:/home/admin/uploads
+    restart: unless-stopped
+    networks:
+      - sftp-network
+
+  # 文件浏览器用于管理SFTP文件
+  sftp-filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: sftp-filebrowser
+    ports:
+      - "8080:80"
+    volumes:
+      - ./sftp-data:/srv/testuser
+      - ./sftp-admin-data:/srv/admin
+    environment:
+      - FB_DATABASE=/database.db
+      - FB_ROOT=/srv
+    restart: unless-stopped
+    networks:
+      - sftp-network
+
+networks:
+  sftp-network:
+    driver: bridge
+
+volumes:
+  sftp-data:
+  sftp-admin-data:

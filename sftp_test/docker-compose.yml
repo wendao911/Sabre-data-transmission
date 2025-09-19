@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  sftp-server:
+    image: atmoz/sftp:alpine
+    container_name: test-sftp-server
+    ports:
+      - "2222:22"
+    volumes:
+      - ./sftp-data:/home/testuser
+      - ./sftp-keys:/etc/ssh/keys
+      - ./init-sftp.sh:/init-sftp.sh
+    environment:
+      - SFTP_USERS=testuser:password:1001:1001:.
+    command: testuser:password:1001:1001:.
+    restart: unless-stopped
+    networks:
+      - sftp-network
+
+  # 可选：添加一个简单的文件管理界面
+  sftp-admin:
+    image: filebrowser/filebrowser:latest
+    container_name: sftp-filebrowser
+    ports:
+      - "8080:80"
+    volumes:
+      - ./sftp-data:/srv
+    environment:
+      - FB_DATABASE=/database.db
+    restart: unless-stopped
+    networks:
+      - sftp-network
+
+networks:
+  sftp-network:
+    driver: bridge
+
+volumes:
+  sftp-data:
+  sftp-keys:
