@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Button, Space } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import { Button, Space, Typography } from 'antd';
+import { ReloadOutlined, LockOutlined } from '@ant-design/icons';
 import EncryptedFileDates from './components/EncryptedFileDates';
 import EncryptedFileList from './components/EncryptedFileList';
 import DecryptedFileList from './components/DecryptedFileList';
 import { useLanguage } from './hooks/useLanguage';
+
+const { Title, Paragraph } = Typography;
 
 const DecryptPage = () => {
   const { t } = useLanguage();
@@ -30,22 +32,28 @@ const DecryptPage = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">{t('pageTitle')}</h1>
-          <Space>
-            <Button 
-              type="primary" 
-              icon={<ReloadOutlined />}
-              onClick={handleRefresh}
-              loading={refreshing}
-            >
-              {t('refresh')}
-            </Button>
-          </Space>
+    <div className="space-y-6">
+      {/* 页面标题 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <LockOutlined className="text-2xl text-blue-600" />
+          <div>
+            <Title level={2} className="!mb-0">{t('pageTitle')}</Title>
+            <Paragraph className="!mb-0 text-gray-600">
+              {t('pageDescription')}
+            </Paragraph>
+          </div>
         </div>
-        <p className="text-gray-600 mt-2">{t('pageDescription')}</p>
+        <Space>
+          <Button 
+            type="primary" 
+            icon={<ReloadOutlined />}
+            onClick={handleRefresh}
+            loading={refreshing}
+          >
+            {t('refresh')}
+          </Button>
+        </Space>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
