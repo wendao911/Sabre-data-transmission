@@ -1,3 +1,6 @@
+// 根目录路径
+const rootPath = 'C:\\Users\\18252\\Desktop\\K6\\coding\\ACCA';
+
 module.exports = {
   server: {
     port: 3000,
@@ -40,8 +43,11 @@ module.exports = {
     timezone: 'Asia/Phnom_Penh',
     offset: '+07:00'
   },
+  // 根目录路径
+  rootPath: rootPath,
+  
   fileBrowser: {
-    rootPath: 'C:\\Users\\18252\\Desktop\\K6\\coding\\ACCA', // 使用指定的根目录路径
+    rootPath: rootPath, // 使用指定的根目录路径
     pageSize: 50, // 每页显示文件数
     allowedFileTypes: ['.gz', '.zip', '.txt', '.dat', '.done', '.csv', '.json'], // 允许的文件类型
     showHiddenFiles: false, // 是否显示隐藏文件
@@ -49,10 +55,10 @@ module.exports = {
     sortOrder: 'asc', // 排序顺序：asc, desc
   },
   decrypt: {
-    // 加密文件目录 - 开发环境使用绝对路径
+    // 加密文件目录 - 独立配置，不基于 rootPath
     encryptionDir: 'C:\\Users\\18252\\Desktop\\K6\\coding\\ACCA\\Sabre Data Encryption',
-    // 解密文件目录 - 开发环境使用绝对路径
-    decryptionDir: 'C:\\Users\\18252\\Desktop\\K6\\coding\\ACCA\\Sabre Data Decryption',
+    // 解密文件目录 - 基于 rootPath 拼接
+    decryptionDir: `${rootPath}\\Sabre Data Decryption`,
     // 密钥文件目录 - 相对于项目根目录
     keyDir: 'backend/src/assets',
     // 密码文件路径 - 相对于项目根目录

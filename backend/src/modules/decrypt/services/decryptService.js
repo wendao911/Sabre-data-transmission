@@ -17,10 +17,10 @@ function getConfigPath(type) {
   
   switch (type) {
     case 'encryptionDir':
-      return decryptConfig.encryptionDir || 'C:\\Users\\18252\\Desktop\\K6\\coding\\ACCA\\Sabre Data Encryption';
+      return decryptConfig.encryptionDir;
     
     case 'decryptionDir':
-      return decryptConfig.decryptionDir || 'C:\\Users\\18252\\Desktop\\K6\\coding\\ACCA\\Sabre Data Decryption';
+      return decryptConfig.decryptionDir;
     
     case 'keyDir':
       return decryptConfig.keyDir 

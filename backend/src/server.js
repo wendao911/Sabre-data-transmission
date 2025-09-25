@@ -39,6 +39,7 @@ app.use('/api/files', require('./modules/files/routes'));
 app.use('/api/decrypt', require('./modules/decrypt/routes'));
 app.use('/api/sftp', require('./modules/sftp/routes'));
 app.use('/api/schedule', require('./modules/schedule/routes'));
+app.use('/api/file-mapping', require('./modules/fileMapping/routes'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
