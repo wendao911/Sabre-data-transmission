@@ -1,4 +1,4 @@
-import { sftpService as apiSftpService, scheduleService } from '../../../services';
+import { sftpService as apiSftpService } from '../../../services';
 
 export const sftpService = {
   async getStatus() {
@@ -13,7 +13,7 @@ export const sftpService = {
 
   async getActiveFtpConfig() {
     try {
-      const result = await scheduleService.getActiveFtpConfig();
+      const result = await apiSftpService.getActiveFtpConfig();
       return result;
     } catch (error) {
       console.error('获取活跃 FTP 配置失败:', error);

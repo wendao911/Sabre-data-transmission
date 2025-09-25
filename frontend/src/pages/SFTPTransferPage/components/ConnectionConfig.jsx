@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Tag, Button, Space, Spin } from 'antd';
 import { CheckCircleOutlined, ExclamationCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 
@@ -7,10 +7,35 @@ const ConnectionConfig = ({
   loadingConfig, 
   isConnected, 
   connecting, 
+  connectedSince,
   onConnect, 
   onDisconnect, 
   onRefresh 
 }) => {
+  const [connectedElapsed, setConnectedElapsed] = useState('');
+
+  useEffect(() => {
+    if (!isConnected || !connectedSince) {
+      setConnectedElapsed('');
+      return undefined;
+    }
+    const startMs = new Date(connectedSince).getTime();
+    const format = (ms) => {
+      if (ms < 0 || Number.isNaN(ms)) return '';
+      const sec = Math.floor(ms / 1000);
+      const days = Math.floor(sec / 86400);
+      const hrs = Math.floor((sec % 86400) / 3600);
+      const mins = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      const pad = (n) => (n < 10 ? `0${n}` : `${n}`);
+      if (days > 0) return `${days}天 ${pad(hrs)}:${pad(mins)}:${pad(s)}`;
+      return `${pad(hrs)}:${pad(mins)}:${pad(s)}`;
+    };
+    const tick = () => setConnectedElapsed(format(Date.now() - startMs));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [isConnected, connectedSince]);
   if (loadingConfig) {
     return (
       <Card title="SFTP 连接配置" className="mb-6">
@@ -58,6 +83,12 @@ const ConnectionConfig = ({
           </Col>
           <Col span={4}>
             <div>
+              <span className="text-gray-500">用户名：</span>
+              <span className="font-medium">{activeFtpConfig.user || '-'}</span>
+            </div>
+          </Col>
+          <Col span={4}>
+            <div>
               <span className="text-gray-500">用户类型：</span>
               <Tag color={activeFtpConfig.userType === 'authenticated' ? 'blue' : 'orange'}>
                 {activeFtpConfig.userType === 'authenticated' ? '普通用户' : '匿名用户'}
@@ -81,6 +112,9 @@ const ConnectionConfig = ({
             >
               {isConnected ? 'SFTP已连接' : 'SFTP未连接'}
             </span>
+            {isConnected && connectedElapsed && (
+              <span className="ml-3 text-gray-500 text-sm">已连接：{connectedElapsed}</span>
+            )}
           </div>
           <Space>
             {!isConnected ? (

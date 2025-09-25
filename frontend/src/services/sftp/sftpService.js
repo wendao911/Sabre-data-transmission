@@ -10,6 +10,15 @@ export const sftpService = {
     }
   },
 
+  async connectActive() {
+    try {
+      const response = await apiClient.getClient().post('/sftp/connect/active');
+      return response.data;
+    } catch (error) {
+      apiClient.handleError(error);
+    }
+  },
+
   async disconnect() {
     try {
       const response = await apiClient.getClient().post('/sftp/disconnect');
@@ -63,6 +72,16 @@ export const sftpService = {
       const response = await apiClient.getClient().post('/sftp/upload', formData, { 
         headers: { 'Content-Type': 'multipart/form-data' } 
       });
+      return response.data;
+    } catch (error) {
+      apiClient.handleError(error);
+    }
+  },
+
+  // 从服务器本地路径推送到SFTP（后端读取本地文件再上传）
+  async uploadFromServer(localPath, remotePath) {
+    try {
+      const response = await apiClient.getClient().post('/sftp/upload', { localPath, remotePath });
       return response.data;
     } catch (error) {
       apiClient.handleError(error);

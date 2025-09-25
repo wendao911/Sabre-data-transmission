@@ -93,6 +93,11 @@ router.get('/browser', (req, res) => {
             aVal = a.mtime;
             bVal = b.mtime;
             break;
+          case 'type':
+            // 目录优先逻辑已在上方处理，这里将目录视为 0，文件为 1
+            aVal = a.isDirectory ? 0 : 1;
+            bVal = b.isDirectory ? 0 : 1;
+            break;
           case 'name':
           default:
             aVal = a.name.toLowerCase();

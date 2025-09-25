@@ -21,7 +21,7 @@ class SFTPService {
         const cfg = {
           host: params.host,
           port: params.port || 22,
-          username: params.user,
+          username: params.user || params.username,
           password: params.password,
           readyTimeout: 30000,
           algorithms: { serverHostKey: ['ssh-rsa', 'ssh-dss', 'rsa-sha2-512', 'rsa-sha2-256', 'ssh-ed25519'] }
