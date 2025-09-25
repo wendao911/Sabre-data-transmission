@@ -1,6 +1,3 @@
-/**
- * GPG文件解密服务（已迁移至 modules/decrypt）
- */
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
@@ -9,45 +6,45 @@ const config = require('../../../config');
 
 const execAsync = promisify(exec);
 
-// 获取配置路径的辅助函数
+/**
+ * 获取配置路径的辅助函数
+ * @param {string} type - 路径类型
+ * @returns {string} 配置路径
+ */
 function getConfigPath(type) {
   const decryptConfig = config.decrypt || {};
-  // 项目根目录 - 从 backend/src/modules/decrypt/services/ 到项目根目录
   const projectRoot = path.join(__dirname, '..', '..', '..', '..', '..');
   
   switch (type) {
     case 'encryptionDir':
       return decryptConfig.encryptionDir;
-    
     case 'decryptionDir':
       return decryptConfig.decryptionDir;
-    
     case 'keyDir':
-      return decryptConfig.keyDir 
-        ? (path.isAbsolute(decryptConfig.keyDir) 
-           ? decryptConfig.keyDir 
-           : path.join(projectRoot, decryptConfig.keyDir))
-        : path.join(projectRoot, 'backend', 'src', 'assets');
-    
+      return path.join(projectRoot, 'backend', 'src', 'assets');
     case 'passphraseFile':
-      const passphrasePath = decryptConfig.passphraseFile 
-        ? (path.isAbsolute(decryptConfig.passphraseFile) 
-           ? decryptConfig.passphraseFile 
-           : path.join(projectRoot, decryptConfig.passphraseFile))
-        : path.join(projectRoot, 'backend', 'src', 'assets', 'K6-gpg-psd.psd');
-      return passphrasePath;
-    
+      return path.join(projectRoot, 'backend', 'src', 'assets', 'K6-gpg-psd.psd');
     default:
       return projectRoot;
   }
 }
 
+/**
+ * 从文件名中提取日期
+ * @param {string} filename - 文件名
+ * @returns {string|null} 提取的日期字符串
+ */
 function extractDateFromFilename(filename) {
   const datePattern = /(\d{8})/;
   const match = filename.match(datePattern);
   return match ? match[1] : null;
 }
 
+/**
+ * 根据日期获取对应的密钥文件
+ * @param {string} date - 日期字符串
+ * @returns {string} 密钥文件路径
+ */
 function getKeyForDate(date) {
   const year = parseInt(date.substring(0, 4));
   const month = parseInt(date.substring(4, 6));
@@ -62,6 +59,10 @@ function getKeyForDate(date) {
   }
 }
 
+/**
+ * 获取所有GPG文件信息
+ * @returns {Array} GPG文件信息数组
+ */
 function getGpgFiles() {
   const gpgFiles = [];
   const encryptionDir = getConfigPath('encryptionDir');
@@ -96,6 +97,10 @@ function getGpgFiles() {
   return gpgFiles;
 }
 
+/**
+ * 创建日期目录
+ * @param {Array} dates - 日期数组
+ */
 function createDateDirectories(dates) {
   const decryptionDir = getConfigPath('decryptionDir');
   if (!fs.existsSync(decryptionDir)) {
@@ -109,7 +114,14 @@ function createDateDirectories(dates) {
   }
 }
 
-
+/**
+ * 解密GPG文件
+ * @param {string} gpgFile - GPG文件路径
+ * @param {string} outputDir - 输出目录
+ * @param {string} privateKey - 私钥文件路径
+ * @param {string} passphrase - 密码
+ * @returns {Promise<boolean>} 解密结果
+ */
 async function decryptGpgFile(gpgFile, outputDir, privateKey, passphrase) {
   try {
     const gpgPath = path.parse(gpgFile);
@@ -128,6 +140,11 @@ async function decryptGpgFile(gpgFile, outputDir, privateKey, passphrase) {
   }
 }
 
+/**
+ * 读取密钥对应的密码
+ * @param {string} keyFile - 密钥文件路径
+ * @returns {string|null} 密码字符串
+ */
 function readPassphrase(keyFile) {
   if (keyFile.includes('AITS-primary-key.asc')) {
     return null;
@@ -144,6 +161,12 @@ function readPassphrase(keyFile) {
   }
 }
 
+/**
+ * 导入私钥
+ * @param {string} privateKey - 私钥文件路径
+ * @param {string} passphrase - 密码
+ * @returns {Promise<boolean>} 导入结果
+ */
 async function importPrivateKey(privateKey, passphrase) {
   try {
     let importCmd;
@@ -159,10 +182,12 @@ async function importPrivateKey(privateKey, passphrase) {
   }
 }
 
-
-
-
-// 批量处理指定日期的所有文件
+/**
+ * 批量处理指定日期的所有文件
+ * @param {string} date - 日期字符串
+ * @param {Function} progressCallback - 进度回调函数
+ * @returns {Promise<Object>} 处理结果
+ */
 async function batchProcessFiles(date, progressCallback = null) {
   try {
     const allFiles = getGpgFiles().filter(f => f.date === date);
@@ -175,12 +200,10 @@ async function batchProcessFiles(date, progressCallback = null) {
       errors: []
     };
 
-    // 确保目标目录存在
     await createDateDirectories([date]);
     const decryptionDir = getConfigPath('decryptionDir');
     const targetDir = path.join(decryptionDir, date);
     
-    // 发送初始进度
     if (progressCallback) {
       progressCallback({
         type: 'start',
@@ -193,7 +216,6 @@ async function batchProcessFiles(date, progressCallback = null) {
       });
     }
     
-    // 预先导入密钥（只导入一次）
     const gpgFiles = allFiles.filter(f => f.isGpg);
     if (gpgFiles.length > 0) {
       const keyFile = getKeyForDate(date);
@@ -217,7 +239,6 @@ async function batchProcessFiles(date, progressCallback = null) {
     for (let i = 0; i < allFiles.length; i++) {
       const file = allFiles[i];
       
-      // 发送当前文件进度
       if (progressCallback) {
         progressCallback({
           type: 'progress',
@@ -232,17 +253,13 @@ async function batchProcessFiles(date, progressCallback = null) {
       
       try {
         if (file.isGpg) {
-          // 解密文件（密钥已预先导入）
           const keyFile = getKeyForDate(date);
           const passphrase = readPassphrase(keyFile);
-          
           await decryptGpgFile(file.filePath, targetDir, keyFile, passphrase);
           results.decrypted++;
         } else {
-          // 复制非加密文件
           const fileName = path.basename(file.filePath);
           const targetPath = path.join(targetDir, fileName);
-          
           fs.copyFileSync(file.filePath, targetPath);
           results.copied++;
         }
@@ -256,7 +273,6 @@ async function batchProcessFiles(date, progressCallback = null) {
       }
     }
     
-    // 发送完成进度
     if (progressCallback) {
       progressCallback({
         type: 'complete',
@@ -275,33 +291,36 @@ async function batchProcessFiles(date, progressCallback = null) {
   }
 }
 
-// 获取加密文件日期列表
+/**
+ * 获取加密文件日期列表
+ * @returns {Array} 日期数组
+ */
 function getEncryptedDates() {
   const gpgFiles = getGpgFiles().filter(f => f.isGpg === true);
   const datesSet = new Set(gpgFiles.map(f => f.date));
   return Array.from(datesSet).sort().reverse();
 }
 
-// 检查指定日期的解密状态
+/**
+ * 检查指定日期的解密状态
+ * @param {string} date - 日期字符串
+ * @returns {Object} 解密状态信息
+ */
 function checkDecryptionStatus(date) {
   try {
     const decryptionDir = getConfigPath('decryptionDir');
     const targetDir = path.join(decryptionDir, date);
     
-    // 检查解密目录是否存在
     if (!fs.existsSync(targetDir)) {
       return { isDecrypted: false, decryptedCount: 0, totalCount: 0 };
     }
     
-    // 获取原始文件数量
     const allFiles = getGpgFiles().filter(f => f.date === date);
     const totalCount = allFiles.length;
     
-    // 获取解密目录中的文件数量
     const decryptedFiles = fs.readdirSync(targetDir);
     const decryptedCount = decryptedFiles.length;
     
-    // 如果解密文件数量大于等于原始文件数量，认为已解密
     const isDecrypted = decryptedCount >= totalCount;
     
     return { isDecrypted, decryptedCount, totalCount };
@@ -311,7 +330,10 @@ function checkDecryptionStatus(date) {
   }
 }
 
-// 获取带解密状态的日期列表
+/**
+ * 获取带解密状态的日期列表
+ * @returns {Array} 带状态的日期数组
+ */
 function getEncryptedDatesWithStatus() {
   const dates = getEncryptedDates();
   return dates.map(date => {
@@ -336,5 +358,3 @@ module.exports = {
   checkDecryptionStatus,
   getConfigPath
 };
-
-

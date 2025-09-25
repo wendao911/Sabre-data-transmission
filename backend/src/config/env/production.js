@@ -58,11 +58,7 @@ module.exports = {
     // 加密文件目录 - 独立配置，不基于 rootPath
     encryptionDir: '/data/sabre/encryption',
     // 解密文件目录 - 基于 rootPath 拼接
-    decryptionDir: `${rootPath}/decryption`,
-    // 密钥文件目录
-    keyDir: '/app/src/assets',
-    // 密码文件路径
-    passphraseFile: '/app/backend/src/assets/K6-gpg-psd.psd'
+    decryptionDir: `${rootPath}/decryption`
   }
 };
 
