@@ -112,7 +112,7 @@ Electron主进程文件位于 `public/electron.js`，预加载脚本位于 `publ
 
 解密功能需要以下文件：
 - `K6-primary-key.asc` - GPG私钥文件
-- `K6-gpg-psd.psd` - 密码文件
+- `backend/src/assets/K6-gpg-psd.psd` - 密码文件
 - `Sabre Data Encryption/` - 加密文件目录
 
 解密后的文件将保存在 `Sabre Data Decryption/` 目录下，按日期分组。

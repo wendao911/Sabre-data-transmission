@@ -56,7 +56,7 @@ module.exports = {
     // 密钥文件目录
     keyDir: '/app/src/assets',
     // 密码文件路径
-    passphraseFile: '/app/K6-gpg-psd.psd'
+    passphraseFile: '/app/backend/src/assets/K6-gpg-psd.psd'
   }
 };
 

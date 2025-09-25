@@ -34,7 +34,7 @@ function getConfigPath(type) {
         ? (path.isAbsolute(decryptConfig.passphraseFile) 
            ? decryptConfig.passphraseFile 
            : path.join(projectRoot, decryptConfig.passphraseFile))
-        : path.join(projectRoot, 'K6-gpg-psd.psd');
+        : path.join(projectRoot, 'backend', 'src', 'assets', 'K6-gpg-psd.psd');
       return passphrasePath;
     
     default:
