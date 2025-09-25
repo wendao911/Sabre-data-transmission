@@ -68,11 +68,15 @@ class SFTPService {
 
   isConnectedToSFTP() {
     if (this.isConnected && this.lastConnectionTime) {
-      const oneHour = 60 * 60 * 1000;
-      if (Date.now() - this.lastConnectionTime > oneHour) {
-        this.isConnected = false;
-        this.lastConnectionTime = null;
-      }
+      try {
+        const config = require('../../../config');
+        const maxMs = (config.sftp && config.sftp.connectionMaxMs) ? config.sftp.connectionMaxMs : (60 * 60 * 1000);
+        if (Date.now() - this.lastConnectionTime > maxMs) {
+          this.isConnected = false;
+          this.lastConnectionTime = null;
+          try { this.client.end(); } catch (_) {}
+        }
+      } catch (_) {}
     }
     return this.isConnected;
   }

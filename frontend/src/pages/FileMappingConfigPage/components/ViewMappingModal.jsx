@@ -65,6 +65,31 @@ const ViewMappingModal = ({ visible, rule, onCancel }) => {
         </Descriptions.Item>
       </Descriptions>
 
+      <Divider orientation="left">调度配置</Divider>
+      <Descriptions column={1} bordered>
+        <Descriptions.Item label="周期">
+          <Tag color="blue">{
+            rule.schedule?.period === 'daily' ? '每天' :
+            rule.schedule?.period === 'weekly' ? '每周' :
+            rule.schedule?.period === 'monthly' ? '每月' : '非固定'
+          }</Tag>
+        </Descriptions.Item>
+        {rule.schedule?.period === 'weekly' && (
+          <Descriptions.Item label="周几">
+            <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+              {(rule.schedule?.weekdays || []).map(d => ['周日','周一','周二','周三','周四','周五','周六'][d]).join('、') || '-'}
+            </code>
+          </Descriptions.Item>
+        )}
+        {rule.schedule?.period === 'monthly' && (
+          <Descriptions.Item label="每月几号">
+            <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+              {(rule.schedule?.monthDays || []).map(n => `${n}号`).join('、') || '-'}
+            </code>
+          </Descriptions.Item>
+        )}
+      </Descriptions>
+
       <Divider orientation="left">{t('sourceConfig')}</Divider>
       
       <Descriptions column={1} bordered>

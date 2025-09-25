@@ -54,6 +54,10 @@ module.exports = {
     sortBy: 'name', // 排序方式：name, size, date
     sortOrder: 'asc', // 排序顺序：asc, desc
   },
+  sftp: {
+    // SFTP 连接最长保持时间（毫秒）
+    connectionMaxMs: 10 * 60 * 1000
+  },
   decrypt: {
     // 加密文件目录 - 独立配置，不基于 rootPath
     encryptionDir: 'C:\\Users\\18252\\Desktop\\K6\\coding\\ACCA\\Sabre Data Encryption',

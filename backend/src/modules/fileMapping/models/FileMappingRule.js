@@ -25,6 +25,24 @@ const fileMappingRuleSchema = new mongoose.Schema({
     max: 1000,
     default: 1
   },
+
+  // 周期配置
+  schedule: {
+    period: {
+      type: String,
+      enum: ['daily', 'weekly', 'monthly', 'adhoc'],
+      default: 'adhoc',
+      required: true
+    },
+    weekdays: {
+      type: [Number], // 0-6: 周日-周六
+      default: undefined
+    },
+    monthDays: {
+      type: [Number], // 1-31
+      default: undefined
+    }
+  },
   
   // 源文件匹配条件
   source: {

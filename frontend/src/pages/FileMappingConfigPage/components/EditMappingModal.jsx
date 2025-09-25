@@ -139,6 +139,57 @@ const EditMappingModal = ({ visible, rule, onConfirm, onCancel }) => {
           </Col>
         </Row>
 
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name={['schedule', 'period']}
+              label="周期"
+              rules={[{ required: true, message: '请选择周期' }]}
+            >
+              <Select placeholder="请选择周期">
+                <Option value="daily">每天</Option>
+                <Option value="weekly">每周</Option>
+                <Option value="monthly">每月</Option>
+                <Option value="adhoc">非固定</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item noStyle shouldUpdate={(prev, cur) => prev.schedule?.period !== cur.schedule?.period}>
+              {({ getFieldValue }) => {
+                const period = getFieldValue(['schedule', 'period']);
+                if (period === 'weekly') {
+                  return (
+                    <Form.Item name={['schedule', 'weekdays']} label="周几" rules={[{ required: true, message: '请选择周几' }]}>
+                      <Select mode="multiple" placeholder="选择周几">
+                        <Option value={1}>周一</Option>
+                        <Option value={2}>周二</Option>
+                        <Option value={3}>周三</Option>
+                        <Option value={4}>周四</Option>
+                        <Option value={5}>周五</Option>
+                        <Option value={6}>周六</Option>
+                        <Option value={0}>周日</Option>
+                      </Select>
+                    </Form.Item>
+                  );
+                }
+                if (period === 'monthly') {
+                  return (
+                    <Form.Item name={['schedule', 'monthDays']} label="每月几号" rules={[{ required: true, message: '请选择日期' }]}>
+                      <Select mode="multiple" placeholder="选择日期">
+                        {Array.from({ length: 31 }).map((_, i) => (
+                          <Option key={i + 1} value={i + 1}>{i + 1}号</Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  );
+                }
+                return null;
+              }}
+            </Form.Item>
+          </Col>
+        </Row>
+
         <Divider orientation="left">源文件配置</Divider>
         
         <Row gutter={16}>

@@ -5,7 +5,7 @@ import {
   PlusOutlined,
   CloudUploadOutlined,
   CloudDownloadOutlined,
-  SyncOutlined,
+  RetweetOutlined,
   FolderOutlined,
   FileOutlined,
   DownloadOutlined,
@@ -174,7 +174,7 @@ const FileBrowser = ({
             <Button type="text" icon={<PlusOutlined />} onClick={onCreateDirectory} disabled={!isConnected} />
           </Tooltip>
           <Tooltip title="同步文件到SFTP（自动连接）">
-            <Button type="text" icon={<SyncOutlined />} onClick={onSync} />
+            <Button type="text" icon={<RetweetOutlined />} onClick={onSync} />
           </Tooltip>
         </Space>
       </div>
