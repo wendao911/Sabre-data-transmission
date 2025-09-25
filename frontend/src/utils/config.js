@@ -147,7 +147,7 @@ class ConfigManager {
 
   // 获取 API 超时时间
   getApiTimeout() {
-    return this.get('api.timeout', 10000);
+    return this.get('api.timeout', 300000); // 5分钟超时
   }
 
   // 获取最大文件大小

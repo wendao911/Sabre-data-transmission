@@ -1,50 +1,46 @@
 import { decryptService as apiDecryptService } from '../../../services/decrypt';
-import { getApiBaseUrl } from '../../../utils/config';
 
 export const decryptService = {
-  async startDecrypt(params, callbacks = {}) {
-    const { onProgress } = callbacks;
-    
+  // 获取带解密状态的日期列表
+  async getEncryptedDatesWithStatus() {
     try {
-      // 开启进度流
-      const eventSource = new EventSource(`${getApiBaseUrl()}/decrypt/progress`);
-      
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (onProgress) {
-            onProgress(data);
-          }
-        } catch (error) {
-          console.error('解析SSE数据失败:', error);
-        }
-      };
-
-      eventSource.onerror = () => {
-        console.error('SSE连接错误');
-        eventSource.close();
-      };
-
-      // 启动解密
-      const result = await apiDecryptService.startDecrypt(params);
-      
-      if (result.success) {
-        return result;
-      } else {
-        throw new Error(result.error || '解密启动失败');
-      }
+      const result = await apiDecryptService.getEncryptedDatesWithStatus();
+      return result;
     } catch (error) {
-      console.error('解密服务错误:', error);
+      console.error('获取加密文件日期状态失败:', error);
       throw error;
     }
   },
 
-  async getStatus() {
+  // 获取已解密文件列表
+  async getDecryptedFiles(date) {
     try {
-      const result = await apiDecryptService.getStatus();
+      const result = await apiDecryptService.getDecryptedFiles(date);
       return result;
     } catch (error) {
-      console.error('获取解密状态失败:', error);
+      console.error('获取已解密文件失败:', error);
+      throw error;
+    }
+  },
+
+  // 获取指定日期的加密文件列表
+  async getEncryptedFiles(date) {
+    try {
+      const result = await apiDecryptService.getEncryptedFiles(date);
+      return result;
+    } catch (error) {
+      console.error('获取加密文件列表失败:', error);
+      throw error;
+    }
+  },
+
+  // 批量处理指定日期的所有文件（带进度推送）
+  async batchProcessFilesWithProgress(date, onProgress) {
+    try {
+      const result = await apiDecryptService.batchProcessFilesWithProgress(date, onProgress);
+      return result;
+    } catch (error) {
+      console.error('批量处理文件失败:', error);
       throw error;
     }
   }

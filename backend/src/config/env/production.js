@@ -47,6 +47,16 @@ module.exports = {
     showHiddenFiles: false, // 是否显示隐藏文件
     sortBy: 'name', // 排序方式：name, size, date
     sortOrder: 'asc', // 排序顺序：asc, desc
+  },
+  decrypt: {
+    // 加密文件目录 - 生产环境使用绝对路径，上线时修改
+    encryptionDir: '/data/sabre/encryption',
+    // 解密文件目录 - 生产环境使用绝对路径，上线时修改
+    decryptionDir: '/data/sabre/decryption',
+    // 密钥文件目录
+    keyDir: '/app/src/assets',
+    // 密码文件路径
+    passphraseFile: '/app/K6-gpg-psd.psd'
   }
 };
 
