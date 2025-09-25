@@ -34,7 +34,6 @@ const SFTPTransferPage = () => {
     operationProgress,
     operationStatus,
     syncDate,
-    syncType,
     syncLoading,
     localCreateDirModalVisible,
     transferModalVisible,
@@ -79,7 +78,7 @@ const SFTPTransferPage = () => {
     closeTransferModal,
     submitTransferToSftp,
     onClose,
-    setSyncType,
+    syncByMapping,
     setSyncDate
   } = useSFTPTransfer();
 
@@ -174,16 +173,11 @@ const SFTPTransferPage = () => {
 
       <SyncModal
         visible={syncModalVisible}
-        syncType={syncType}
         syncDate={syncDate}
         syncLoading={syncLoading}
         onClose={() => onClose('sync')}
-        onSyncTypeChange={setSyncType}
         onSyncDateChange={setSyncDate}
-        onSync={() => {
-          // TODO: 实现同步逻辑
-          console.log('同步文件', { syncType, syncDate });
-        }}
+        onSync={syncByMapping}
       />
 
       <Modal

@@ -35,7 +35,6 @@ export const useSFTPTransfer = () => {
   const [operationProgress, setOperationProgress] = useState(0);
   const [operationStatus, setOperationStatus] = useState('');
   const [syncDate, setSyncDate] = useState(null);
-  const [syncType, setSyncType] = useState('encrypted');
   const [syncLoading, setSyncLoading] = useState(false);
   const [localCreateDirModalVisible, setLocalCreateDirModalVisible] = useState(false);
   const [transferModalVisible, setTransferModalVisible] = useState(false);
@@ -427,6 +426,36 @@ export const useSFTPTransfer = () => {
     sftpService.downloadAsAttachment(path);
   };
 
+  // 映射规则同步
+  const syncByMapping = async () => {
+    if (!syncDate) {
+      toast.error('请选择同步日期');
+      return;
+    }
+    if (!isConnected) {
+      toast.error('SFTP未连接');
+      return;
+    }
+    setSyncLoading(true);
+    try {
+      const day = typeof syncDate === 'string' ? syncDate : (syncDate?.format ? syncDate.format('YYYY-MM-DD') : new Date(syncDate).toISOString().slice(0,10));
+      const resp = await apiClient.getClient().post('/sftp/sync/by-mapping', { date: day });
+      if (resp?.data?.success) {
+        const data = resp.data.data;
+        toast.success(`同步完成：成功 ${data.synced}，跳过 ${data.skipped}，失败 ${data.failed}`);
+        await loadDirectoryList(currentPath || '/');
+      } else {
+        toast.error(resp?.data?.message || '同步失败');
+      }
+    } catch (e) {
+      toast.error('同步失败: ' + e.message);
+    } finally {
+      setSyncLoading(false);
+      setSyncDate(null);
+      setSyncModalVisible && setSyncModalVisible(false);
+    }
+  };
+
   return {
     // State
     isConnected,
@@ -453,7 +482,6 @@ export const useSFTPTransfer = () => {
     operationProgress,
     operationStatus,
     syncDate,
-    syncType,
     syncLoading,
     localCreateDirModalVisible,
     transferModalVisible,
@@ -482,7 +510,6 @@ export const useSFTPTransfer = () => {
     setDownloadModalVisible,
     setSyncModalVisible,
     setCreateDirModalVisible,
-    setSyncType,
     setSyncDate,
     
     // Direct actions
@@ -513,6 +540,7 @@ export const useSFTPTransfer = () => {
     openTransferModal,
     closeTransferModal,
     submitTransferToSftp,
+    syncByMapping,
     openLocalCreateDirectory,
     closeLocalCreateDirectory,
     handleLocalCreateDirectorySubmit,

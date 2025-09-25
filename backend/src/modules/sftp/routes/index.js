@@ -3,6 +3,9 @@ const router = express.Router();
 const sftpService = require('../services/sftpService');
 const { logTransferDayResult } = require('../../files/services/transferLogService');
 const { SFTPConfig } = require('../models');
+const { syncByMapping } = require('../services/syncService');
+const path = require('path');
+const fs = require('fs');
 
 // 连接状态
 router.get('/status', (req, res) => {
@@ -131,7 +134,6 @@ router.post('/download', async (req, res) => {
 // 以附件流的方式下载远程文件（供前端直接打开新窗口下载）
 router.get('/download-stream', async (req, res) => {
   try {
-    const path = require('path');
     const remotePath = req.query.path;
     if (!remotePath) {
       return res.status(400).json({ success: false, message: '缺少 path 参数' });
@@ -150,6 +152,18 @@ router.get('/download-stream', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
     res.setHeader('Content-Length', buffer.length);
     res.status(200).end(buffer);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 根据映射规则同步文件（按日期）
+router.post('/sync/by-mapping', async (req, res) => {
+  try {
+    const { date } = req.body; // YYYY-MM-DD
+    if (!date) return res.status(400).json({ success: false, message: '缺少 date 参数' });
+    const result = await syncByMapping(date);
+    return res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
