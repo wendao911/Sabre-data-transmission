@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Button, Table, Space, Divider, Tooltip, Popconfirm } from 'antd';
 import { ReloadOutlined, FolderOutlined, FileOutlined, PlusOutlined, CloudUploadOutlined, DownloadOutlined, DeleteOutlined, SwapRightOutlined } from '@ant-design/icons';
+import { useLanguage } from '../hooks/useLanguage';
 
 const LocalFileBrowser = ({
   currentPath,
@@ -18,8 +19,9 @@ const LocalFileBrowser = ({
   onSortChange,
   onTransfer
 }) => {
+  const { t } = useLanguage();
   const generateBreadcrumb = () => {
-    const base = { name: '资源根目录', path: '' };
+    const base = { name: t('breadcrumb_root') || '资源根目录', path: '' };
     if (!currentPath) return [base];
     const parts = currentPath.split('/').filter(Boolean);
     const breadcrumb = [base];
@@ -54,7 +56,7 @@ const LocalFileBrowser = ({
 
   const columns = [
     {
-      title: '名称',
+      title: t('col_name') || '名称',
       dataIndex: 'name',
       key: 'name',
       sorter: true,
@@ -83,15 +85,15 @@ const LocalFileBrowser = ({
       }
     },
     {
-      title: '类型',
+      title: t('col_type') || '类型',
       dataIndex: 'type',
       key: 'type',
       width: 80,
       sorter: true,
-      render: (type) => (type === 'directory' ? '目录' : '文件')
+      render: (type) => (type === 'directory' ? (t('type_directory') || '目录') : (t('type_file') || '文件'))
     },
     {
-      title: '大小',
+      title: t('col_size') || '大小',
       dataIndex: 'size',
       key: 'size',
       width: 120,
@@ -99,7 +101,7 @@ const LocalFileBrowser = ({
       render: (size, record) => (record.type === 'directory' ? '-' : formatFileSize(size))
     },
     {
-      title: '修改时间',
+      title: t('col_mtime') || '修改时间',
       dataIndex: 'mtime',
       key: 'mtime',
       width: 160,
@@ -109,24 +111,24 @@ const LocalFileBrowser = ({
   ];
 
   return (
-    <Card title="服务器本地文件">
+    <Card title={t('local_server_files') || '服务器本地文件'}>
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Button type="text" icon={<ReloadOutlined />} onClick={() => onRefresh(currentPath)} loading={loading} />
           <Button type="text" icon={<FolderOutlined />} onClick={onGoToParent} disabled={!currentPath} />
         </div>
         <div className="flex items-center space-x-1">
-          <Tooltip title="创建目录">
+          <Tooltip title={t('action_create_dir') || '创建目录'}>
             <Button type="text" icon={<PlusOutlined />} onClick={onCreateDirectory} />
           </Tooltip>
-          <Tooltip title="上传文件">
+          <Tooltip title={t('action_upload') || '上传文件'}>
             <Button type="text" icon={<CloudUploadOutlined />} onClick={onUpload} />
           </Tooltip>
         </div>
       </div>
 
       <div className="flex items-center space-x-1 text-sm mb-2">
-        <span className="text-gray-500">路径:</span>
+        <span className="text-gray-500">{t('breadcrumb_path') || '路径'}:</span>
         {generateBreadcrumb().map((item, idx) => (
           <React.Fragment key={item.path}>
             {idx > 0 && <span className="text-gray-400">/</span>}
@@ -147,30 +149,30 @@ const LocalFileBrowser = ({
         columns={[
           ...columns,
           {
-            title: '操作',
+            title: t('col_action') || '操作',
             key: 'action',
             width: 110,
             render: (_, record) => (
               <Space size={0}>
                 {!record.isDirectory && (
-                  <Tooltip title="下载">
+                  <Tooltip title={t('action_download') || '下载'}>
                     <Button type="text" icon={<DownloadOutlined />} onClick={() => onDownload(record)} />
                   </Tooltip>
                 )}
                 {!record.isDirectory && (
-                  <Tooltip title="传输到SFTP">
+                  <Tooltip title={t('action_transfer_to_sftp') || '传输到SFTP'}>
                     <Button type="text" icon={<SwapRightOutlined />} onClick={() => onTransfer(record)} />
                   </Tooltip>
                 )}
                 <Popconfirm
-                  title={`确认删除${record.isDirectory ? '目录' : '文件'}？`}
-                  description={`将删除：${record.name}`}
-                  okText="删除"
-                  cancelText="取消"
+                  title={`${t('confirm_delete_prefix') || '确认删除'}${record.isDirectory ? (t('type_directory') || '目录') : (t('type_file') || '文件')}？`}
+                  description={`${(t('confirm_delete_desc_prefix') || '将删除：')}${record.name}`}
+                  okText={t('ok_delete') || '删除'}
+                  cancelText={t('cancel') || '取消'}
                   okButtonProps={{ danger: true }}
                   onConfirm={() => onDelete(record)}
                 >
-                  <Tooltip title="删除">
+                  <Tooltip title={t('action_delete') || '删除'}>
                     <Button type="text" danger icon={<DeleteOutlined />} />
                   </Tooltip>
                 </Popconfirm>
@@ -187,7 +189,7 @@ const LocalFileBrowser = ({
           total: pagination?.total || 0,
           showSizeChanger: true,
           showQuickJumper: true,
-          showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+          showTotal: (total, range) => (t('pagination_total') ? t('pagination_total', { start: range[0], end: range[1], total }) : `第 ${range[0]}-${range[1]} 条，共 ${total} 条`),
           onChange: onPageChange,
           onShowSizeChange: (current, size) => onPageChange(1, size)
         }}

@@ -4,7 +4,7 @@ const sftpService = require('./sftpService');
 const FileMappingRule = require('../../fileMapping/models/FileMappingRule');
 const { SyncSession, AdhocFileSync } = require('../../fileMapping/models/SyncRecord');
 const config = require('../../../config');
-const { replaceDateVariables, formatDate, parseDateString } = require('../../../utils/date');
+const { replaceDateVariables, parseDateString } = require('../../../utils/date');
 
 /**
  * 1.根据规则获取文件列表
@@ -273,7 +273,6 @@ async function processRuleSync(rule, date, periodType) {
     const fileResult = getFileList(rule, date);
     if (!fileResult.files || fileResult.files.length === 0) {
       results.status = 'no_files';
-      await recordSyncResult(rule, date, periodType, results);
       return { success: true, message: '没有找到匹配的文件', data: results };
     }
     

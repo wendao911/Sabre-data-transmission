@@ -11,6 +11,7 @@ import {
   DownloadOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
+import { useLanguage } from '../hooks/useLanguage';
 
 const FileBrowser = ({
   title,
@@ -31,8 +32,9 @@ const FileBrowser = ({
   onPageChange,
   onSortChange
 }) => {
+  const { t } = useLanguage();
   const generateBreadcrumb = () => {
-    const base = { name: '资源根目录', path: '/' };
+    const base = { name: t('breadcrumb_root') || '资源根目录', path: '/' };
     if (!currentPath || currentPath === '/') return [base];
     const parts = currentPath.split('/').filter(Boolean);
     const breadcrumb = [base];
@@ -46,7 +48,7 @@ const FileBrowser = ({
 
   const columns = [
     {
-      title: '名称',
+      title: t('col_name') || '名称',
       dataIndex: 'name',
       key: 'name',
       sorter: true,
@@ -78,15 +80,15 @@ const FileBrowser = ({
       },
     },
     {
-      title: '类型',
+      title: t('col_type') || '类型',
       dataIndex: 'type',
       key: 'type',
       width: 80,
       sorter: true,
-      render: (type) => (type === 'directory' ? '目录' : '文件'),
+      render: (type) => (type === 'directory' ? (t('type_directory') || '目录') : (t('type_file') || '文件')),
     },
     {
-      title: '大小',
+      title: t('col_size') || '大小',
       dataIndex: 'size',
       key: 'size',
       width: 120,
@@ -94,7 +96,7 @@ const FileBrowser = ({
       render: (size, record) => (record.type === 'directory' ? '-' : (size ? formatFileSize(size) : '-')),
     },
     {
-      title: '修改时间',
+      title: t('col_mtime') || '修改时间',
       dataIndex: 'date',
       key: 'date',
       width: 180,
@@ -102,13 +104,13 @@ const FileBrowser = ({
       render: (date) => formatDateDisplay(date),
     },
     {
-      title: '操作',
+      title: t('col_action') || '操作',
       key: 'action',
       width: 110,
       render: (_, record) => (
         <Space size={0}>
           {record.type !== 'directory' && (
-            <Tooltip title="下载">
+            <Tooltip title={t('action_download') || '下载'}>
               <Button
                 type="text"
                 icon={<DownloadOutlined />}
@@ -120,13 +122,13 @@ const FileBrowser = ({
             </Tooltip>
           )}
           <Popconfirm
-            title={`确认删除${record.type === 'directory' ? '目录' : '文件'}？`}
-            okText="删除"
-            cancelText="取消"
+            title={`${t('confirm_delete_prefix') || '确认删除'}${record.type === 'directory' ? (t('type_directory') || '目录') : (t('type_file') || '文件')}？`}
+            okText={t('ok_delete') || '删除'}
+            cancelText={t('cancel') || '取消'}
             okButtonProps={{ danger: true }}
             onConfirm={() => onDelete(record)}
           >
-            <Tooltip title="删除">
+            <Tooltip title={t('action_delete') || '删除'}>
               <Button type="text" danger icon={<DeleteOutlined />} />
             </Tooltip>
           </Popconfirm>
@@ -158,29 +160,29 @@ const FileBrowser = ({
   };
 
   return (
-    <Card title={title || 'SFTP 远程文件'}>
+    <Card title={title || (t('sftp_remote_files') || 'SFTP 远程文件')}>
       <div className="mb-4 flex justify-between items-center">
         <Space>
-          <Tooltip title="刷新当前目录">
+          <Tooltip title={t('tip_refresh') || '刷新当前目录'}>
             <Button type="text" icon={<ReloadOutlined />} onClick={() => onRefresh(currentPath)} loading={listLoading} />
           </Tooltip>
-          <Tooltip title="返回上级目录">
+          <Tooltip title={t('tip_go_parent') || '返回上级目录'}>
             <Button type="text" icon={<FolderOutlined />} onClick={onGoToParent} disabled={currentPath === '/' || currentPath === ''} />
           </Tooltip>
           <Divider type="vertical" />
         </Space>
         <Space>
-          <Tooltip title="创建目录">
+          <Tooltip title={t('action_create_dir') || '创建目录'}>
             <Button type="text" icon={<PlusOutlined />} onClick={onCreateDirectory} disabled={!isConnected} />
           </Tooltip>
-          <Tooltip title="同步文件到SFTP（自动连接）">
+          <Tooltip title={t('action_sync') || '同步文件到SFTP（自动连接）'}>
             <Button type="text" icon={<RetweetOutlined />} onClick={onSync} />
           </Tooltip>
         </Space>
       </div>
 
       <div className="flex items-center space-x-1 text-sm mb-2">
-        <span className="text-gray-500">路径:</span>
+        <span className="text-gray-500">{t('breadcrumb_path') || '路径'}:</span>
         {generateBreadcrumb().map((item, index) => (
           <React.Fragment key={item.path}>
             {index > 0 && <span className="text-gray-400">/</span>}
@@ -198,7 +200,7 @@ const FileBrowser = ({
         ))}
       </div>
 
-       <Table
+      <Table
         columns={columns}
         dataSource={directoryList}
         loading={listLoading}
@@ -209,7 +211,7 @@ const FileBrowser = ({
            total: pagination?.total || 0,
            showSizeChanger: true,
            showQuickJumper: true,
-           showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+          showTotal: (total, range) => (t('pagination_total') ? t('pagination_total', { start: range[0], end: range[1], total }) : `第 ${range[0]}-${range[1]} 条，共 ${total} 条`),
            onChange: onPageChange,
            onShowSizeChange: (current, size) => onPageChange(1, size)
          }}

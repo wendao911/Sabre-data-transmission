@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Progress, List, Card, Typography, Space, Tag, Divider, Spin } from 'antd';
 import { SyncOutlined, CheckCircleOutlined, CloseCircleOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import { useLanguage } from '../hooks/useLanguage';
 
 const { Title, Text } = Typography;
 
 const SyncProgressModal = ({ visible, onCancel, syncData, isRunning }) => {
+  const { t } = useLanguage();
   const [progress, setProgress] = useState(0);
   const [currentRule, setCurrentRule] = useState(null);
   const [ruleProgress, setRuleProgress] = useState({});
@@ -64,15 +66,15 @@ const SyncProgressModal = ({ visible, onCancel, syncData, isRunning }) => {
   const getStatusText = (status) => {
     switch (status) {
       case 'success':
-        return '成功';
+        return t('status_success');
       case 'partial':
-        return '部分成功';
+        return t('status_partial');
       case 'failed':
-        return '失败';
+        return t('status_failed');
       case 'skipped':
-        return '跳过';
+        return t('status_skipped');
       case 'no_files':
-        return '无文件';
+        return t('status_no_files');
       default:
         return '处理中';
     }
@@ -83,7 +85,7 @@ const SyncProgressModal = ({ visible, onCancel, syncData, isRunning }) => {
       title={
         <Space>
           <SyncOutlined spin={isRunning} />
-          <span>文件同步进度</span>
+          <span>{t('syncProgressTitle')}</span>
           {isRunning && <Spin size="small" />}
         </Space>
       }
@@ -97,7 +99,7 @@ const SyncProgressModal = ({ visible, onCancel, syncData, isRunning }) => {
       <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
         {/* 总体进度 */}
         <Card size="small" style={{ marginBottom: 16 }}>
-          <Title level={5}>总体进度</Title>
+          <Title level={5}>{t('overallProgress')}</Title>
           <Progress 
             percent={progress} 
             status={isRunning ? 'active' : (progress === 100 ? 'success' : 'normal')}
@@ -108,19 +110,19 @@ const SyncProgressModal = ({ visible, onCancel, syncData, isRunning }) => {
           />
           <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between' }}>
             <Text type="secondary">
-              总文件: {syncData?.totalFiles || 0}
+              {t('totalFiles')}: {syncData?.totalFiles || 0}
             </Text>
             <Space>
-              <Tag color="success">已同步: {syncData?.synced || 0}</Tag>
-              <Tag color="warning">跳过: {syncData?.skipped || 0}</Tag>
-              <Tag color="error">失败: {syncData?.failed || 0}</Tag>
+              <Tag color="success">{t('synced')}: {syncData?.synced || 0}</Tag>
+              <Tag color="warning">{t('skipped')}: {syncData?.skipped || 0}</Tag>
+              <Tag color="error">{t('failed')}: {syncData?.failed || 0}</Tag>
             </Space>
           </div>
         </Card>
 
         {/* 规则详情 */}
         <Card size="small">
-          <Title level={5}>规则处理详情</Title>
+          <Title level={5}>{t('ruleDetails')}</Title>
           {syncData?.ruleResults && syncData.ruleResults.length > 0 ? (
             <List
               dataSource={syncData.ruleResults}
@@ -149,7 +151,7 @@ const SyncProgressModal = ({ visible, onCancel, syncData, isRunning }) => {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                       <Text type="secondary">
-                        模块: {rule.module} | 总文件: {rule.totalFiles}
+                        {t('module')}: {rule.module} | {t('ruleTotalFiles')}: {rule.totalFiles}
                       </Text>
                       <Space size="small">
                         <Text style={{ color: '#52c41a' }}>✓ {rule.syncedFiles}</Text>
@@ -170,7 +172,7 @@ const SyncProgressModal = ({ visible, onCancel, syncData, isRunning }) => {
             />
           ) : (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <Text type="secondary">暂无规则处理信息</Text>
+              <Text type="secondary">{t('noneRuleInfo')}</Text>
             </div>
           )}
         </Card>
@@ -180,7 +182,7 @@ const SyncProgressModal = ({ visible, onCancel, syncData, isRunning }) => {
           <Card size="small" style={{ marginTop: 16, background: '#f6ffed' }}>
             <Space>
               <SyncOutlined spin />
-              <Text>正在同步文件，请稍候...</Text>
+              <Text>{t('running')}</Text>
             </Space>
           </Card>
         )}
@@ -191,7 +193,7 @@ const SyncProgressModal = ({ visible, onCancel, syncData, isRunning }) => {
             <Space>
               {progress === 100 ? <CheckCircleOutlined style={{ color: '#52c41a' }} /> : <SyncOutlined />}
               <Text>
-                {progress === 100 ? '同步完成！' : '同步已停止'}
+                {progress === 100 ? t('finished') : t('stopped')}
               </Text>
             </Space>
           </Card>

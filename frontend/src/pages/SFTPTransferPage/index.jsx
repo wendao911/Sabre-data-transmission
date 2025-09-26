@@ -1,16 +1,19 @@
 import React from 'react';
-import { Modal, Progress } from 'antd';
+import { Modal, Progress, Button, Space, Typography } from 'antd';
+import { ReloadOutlined, CloudServerOutlined } from '@ant-design/icons';
 import { useSFTPTransfer } from './hooks/useSFTPTransfer';
+import { useLanguage } from './hooks/useLanguage';
 import { ConnectionConfig } from './components/ConnectionConfig';
 import { FileBrowser } from './components/FileBrowser';
 import { LocalFileBrowser } from './components/LocalFileBrowser';
-import { UploadModal } from './components/UploadModal';
 import { CreateDirectoryModal } from './components/CreateDirectoryModal';
-import { DownloadModal } from './components/DownloadModal';
 import { SyncModal } from './components/SyncModal';
 import SyncProgressModal from './components/SyncProgressModal';
 
+const { Title, Paragraph } = Typography;
+
 const SFTPTransferPage = () => {
+  const { t } = useLanguage();
   const {
     // State
     isConnected,
@@ -26,8 +29,6 @@ const SFTPTransferPage = () => {
     localList,
     localLoading,
     localPagination,
-    uploadModalVisible,
-    downloadModalVisible,
     syncModalVisible,
     createDirModalVisible,
     uploadFileList,
@@ -56,8 +57,6 @@ const SFTPTransferPage = () => {
     
     // Modal controls
     onCreateDirectory,
-    onUpload,
-    onDownload,
     onSync,
     onNavigateDirectory,
     onGoToParent,
@@ -87,10 +86,31 @@ const SFTPTransferPage = () => {
     setSyncDate
   } = useSFTPTransfer();
 
+  const handleRefreshAll = () => {
+    onRefresh();
+    onRefreshLocal();
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">SFTP文件传输</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <CloudServerOutlined className="text-2xl text-blue-600" />
+          <div>
+            <Title level={2} className="!mb-0">{t('pageTitle')}</Title>
+            <Paragraph className="!mb-0 text-gray-600">{t('pageDescription')}</Paragraph>
+          </div>
+        </div>
+        <Space>
+          <Button 
+            type="primary" 
+            icon={<ReloadOutlined />}
+            onClick={handleRefreshAll}
+            loading={listLoading || localLoading}
+          >
+            {t('refresh')}
+          </Button>
+        </Space>
       </div>
 
       <ConnectionConfig
@@ -130,8 +150,6 @@ const SFTPTransferPage = () => {
           isConnected={isConnected}
           onRefresh={onRefresh}
           onCreateDirectory={onCreateDirectory}
-          onUpload={onUpload}
-          onDownload={onDownload}
           onSync={onSync}
           onNavigateDirectory={onNavigateDirectory}
           onGoToParent={onGoToParent}
@@ -142,19 +160,6 @@ const SFTPTransferPage = () => {
           onSortChange={(field, order) => onSftpSortChange(field, order)}
         />
       </div>
-
-      <UploadModal
-        visible={uploadModalVisible}
-        currentPath={currentPath}
-        uploadFileList={uploadFileList}
-        uploading={uploading}
-        operationProgress={operationProgress}
-        operationStatus={operationStatus}
-        onClose={() => onClose('upload')}
-        onFileChange={handleFileChange}
-        onRemoveFile={handleRemoveFile}
-        onUpload={handleUpload}
-      />
 
       <CreateDirectoryModal
         visible={createDirModalVisible}
@@ -170,12 +175,6 @@ const SFTPTransferPage = () => {
         onCreate={handleLocalCreateDirectorySubmit}
       />
 
-      <DownloadModal
-        visible={downloadModalVisible}
-        onClose={() => onClose('download')}
-        onDownload={handleDownload}
-      />
-
       <SyncModal
         visible={syncModalVisible}
         syncDate={syncDate}
@@ -186,22 +185,22 @@ const SFTPTransferPage = () => {
       />
 
       <Modal
-        title="传输到 SFTP"
+        title={t('transferTitle')}
         open={transferModalVisible}
         onCancel={closeTransferModal}
         onOk={submitTransferToSftp}
-        okText="开始传输"
-        cancelText="取消"
+        okText={t('transferOk')}
+        cancelText={t('transferCancel')}
         confirmLoading={transfering}
       >
         <div className="space-y-3">
-          <div className="text-sm text-gray-600">本地文件：
+          <div className="text-sm text-gray-600">{t('labelLocalFile')}
             <code className="bg-gray-50 px-2 py-1 rounded ml-2">{transferTarget ? (transferTarget.path || (localPath ? `${localPath}/${transferTarget.name}` : transferTarget.name)) : '-'}</code>
           </div>
-          <div className="text-sm text-gray-600">SFTP 目标主机：
+          <div className="text-sm text-gray-600">{t('labelTargetHost')}
             <code className="bg-gray-50 px-2 py-1 rounded ml-2">{activeFtpConfig ? `${activeFtpConfig.host}:${activeFtpConfig.sftpPort || 22}` : '-'}</code>
           </div>
-          <div className="text-sm text-gray-600">SFTP 目标目录：
+          <div className="text-sm text-gray-600">{t('labelTargetDir')}
             <code className="bg-gray-50 px-2 py-1 rounded ml-2">{currentPath || '/'}</code>
           </div>
           {transfering && (
@@ -209,7 +208,7 @@ const SFTPTransferPage = () => {
               <Progress percent={transferProgress} size="small" status={transferProgress < 100 ? 'active' : 'normal'} />
             </div>
           )}
-          <div className="text-xs text-gray-400">说明：将按原文件名上传到指定目录，必要时会自动创建远程目录。</div>
+          <div className="text-xs text-gray-400">{t('tipTransfer')}</div>
         </div>
       </Modal>
 

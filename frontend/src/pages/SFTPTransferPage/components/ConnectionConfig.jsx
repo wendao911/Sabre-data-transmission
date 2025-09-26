@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Tag, Button, Space, Spin } from 'antd';
 import { CheckCircleOutlined, ExclamationCircleOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useLanguage } from '../hooks/useLanguage';
 
 const ConnectionConfig = ({ 
   activeFtpConfig, 
@@ -12,6 +13,7 @@ const ConnectionConfig = ({
   onDisconnect, 
   onRefresh 
 }) => {
+  const { t } = useLanguage();
   const [connectedElapsed, setConnectedElapsed] = useState('');
 
   useEffect(() => {
@@ -38,10 +40,10 @@ const ConnectionConfig = ({
   }, [isConnected, connectedSince]);
   if (loadingConfig) {
     return (
-      <Card title="SFTP 连接配置" className="mb-6">
+      <Card title={t('conn_title')} className="mb-6">
         <div className="text-center py-4">
           <Spin size="large" />
-          <p className="mt-2 text-gray-500">加载配置中...</p>
+          <p className="mt-2 text-gray-500">{t('conn_loading')}</p>
         </div>
       </Card>
     );
@@ -49,49 +51,49 @@ const ConnectionConfig = ({
 
   if (!activeFtpConfig) {
     return (
-      <Card title="SFTP 连接配置" className="mb-6">
+      <Card title={t('conn_title')} className="mb-6">
         <div className="text-center py-4">
           <ExclamationCircleOutlined style={{ fontSize: '48px', color: '#ff4d4f' }} />
-          <p className="mt-2 text-gray-500">没有可用的 SFTP 配置</p>
-          <p className="text-sm text-gray-400">请在系统设置中配置 SFTP 连接</p>
+          <p className="mt-2 text-gray-500">{t('conn_empty')}</p>
+          <p className="text-sm text-gray-400">{t('conn_hint')}</p>
         </div>
       </Card>
     );
   }
 
   return (
-    <Card title="SFTP 连接配置" className="mb-6">
+    <Card title={t('conn_title')} className="mb-6">
       <div>
         <Row gutter={[16, 16]}>
           <Col span={6}>
             <div>
-              <span className="text-gray-500">配置名称：</span>
-              <span className="font-medium">{activeFtpConfig.name || '未命名'}</span>
+              <span className="text-gray-500">{t('conn_name')}：</span>
+              <span className="font-medium">{activeFtpConfig.name || t('conn_unnamed')}</span>
             </div>
           </Col>
           <Col span={6}>
             <div>
-              <span className="text-gray-500">主机：</span>
+              <span className="text-gray-500">{t('conn_host')}：</span>
               <span className="font-medium">{activeFtpConfig.host}</span>
             </div>
           </Col>
           <Col span={4}>
             <div>
-              <span className="text-gray-500">端口：</span>
+              <span className="text-gray-500">{t('conn_port')}：</span>
               <span className="font-medium">{activeFtpConfig.sftpPort || 22}</span>
             </div>
           </Col>
           <Col span={4}>
             <div>
-              <span className="text-gray-500">用户名：</span>
+              <span className="text-gray-500">{t('conn_user')}：</span>
               <span className="font-medium">{activeFtpConfig.user || '-'}</span>
             </div>
           </Col>
           <Col span={4}>
             <div>
-              <span className="text-gray-500">用户类型：</span>
+              <span className="text-gray-500">{t('conn_userType')}：</span>
               <Tag color={activeFtpConfig.userType === 'authenticated' ? 'blue' : 'orange'}>
-                {activeFtpConfig.userType === 'authenticated' ? '普通用户' : '匿名用户'}
+                {activeFtpConfig.userType === 'authenticated' ? t('conn_user_normal') : t('conn_user_anonymous')}
               </Tag>
             </div>
           </Col>
@@ -110,10 +112,10 @@ const ConnectionConfig = ({
                 marginLeft: '8px' 
               }}
             >
-              {isConnected ? 'SFTP已连接' : 'SFTP未连接'}
+              {isConnected ? t('conn_status_connected') : t('conn_status_disconnected')}
             </span>
             {isConnected && connectedElapsed && (
-              <span className="ml-3 text-gray-500 text-sm">已连接：{connectedElapsed}</span>
+              <span className="ml-3 text-gray-500 text-sm">{t('conn_since')}：{connectedElapsed}</span>
             )}
           </div>
           <Space>
@@ -124,7 +126,7 @@ const ConnectionConfig = ({
                 onClick={onConnect} 
                 loading={connecting}
               >
-                连接 SFTP
+                {t('conn_btn_connect')}
               </Button>
             ) : (
               <Button 
@@ -132,7 +134,7 @@ const ConnectionConfig = ({
                 icon={<ExclamationCircleOutlined />} 
                 onClick={onDisconnect}
               >
-                断开连接
+                {t('conn_btn_disconnect')}
               </Button>
             )}
             <Button 
@@ -141,7 +143,7 @@ const ConnectionConfig = ({
               onClick={onRefresh} 
               loading={loadingConfig}
             >
-              刷新配置
+              {t('conn_btn_refresh')}
             </Button>
           </Space>
         </div>
