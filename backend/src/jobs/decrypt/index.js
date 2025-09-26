@@ -1,4 +1,4 @@
-const cron = require('node-cron');
+const schedule = require('node-schedule');
 const { batchProcessFiles } = require('../../modules/decrypt/services/decryptService');
 const { SystemLog } = require('../../modules/system/models/SystemLog');
 const { ScheduleConfig } = require('../../modules/schedule/models');
@@ -65,9 +65,9 @@ async function run(params = {}) {
  * @returns {import('node-cron').ScheduledTask}
  */
 function register(cronExpr = '0 3 * * *', timezone = 'Asia/Phnom_Penh') {
-  return cron.schedule(cronExpr, async () => {
+  return schedule.scheduleJob({ rule: cronExpr, tz: timezone }, async () => {
     await run();
-  }, { timezone });
+  });
 }
 
 /**

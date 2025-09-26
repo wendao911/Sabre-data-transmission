@@ -1,4 +1,4 @@
-const cron = require('node-cron');
+const schedule = require('node-schedule');
 const { ScheduleConfig } = require('../modules/schedule/models');
 const jobs = require('./index');
 
@@ -23,17 +23,15 @@ function registerOne(cfg) {
   if (!jobDef) return;
   // 取消已存在的
   if (scheduled.has(cfg.taskType)) {
-    try { scheduled.get(cfg.taskType).stop(); } catch (_) {}
+    try { scheduled.get(cfg.taskType).cancel(); } catch (_) {}
     scheduled.delete(cfg.taskType);
   }
   if (!cfg.enabled) return; // 未启用不注册
   // 默认时区固定为柬埔寨
   const timezone = 'Asia/Phnom_Penh';
-  const task = cron.schedule(cfg.cron, async () => {
-    try {
-      await jobDef.run();
-    } catch (_) {}
-  }, { timezone });
+  const task = schedule.scheduleJob({ rule: cfg.cron, tz: timezone }, async () => {
+    try { await jobDef.run(); } catch (_) {}
+  });
   scheduled.set(cfg.taskType, task);
 }
 
@@ -54,7 +52,7 @@ async function reloadTask(taskType) {
   if (!cfg) {
     // 若配置被删除，则取消已有任务
     if (scheduled.has(taskType)) {
-      try { scheduled.get(taskType).stop(); } catch (_) {}
+      try { scheduled.get(taskType).cancel(); } catch (_) {}
       scheduled.delete(taskType);
     }
     return;

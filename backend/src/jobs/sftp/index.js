@@ -1,4 +1,4 @@
-const cron = require('node-cron');
+const schedule = require('node-schedule');
 const { SystemLog } = require('../../modules/system/models/SystemLog');
 const { ScheduleConfig } = require('../../modules/schedule/models');
 const { SFTPConfig } = require('../../modules/sftp/models');
@@ -96,9 +96,9 @@ async function run(params = {}) {
  * @returns {import('node-cron').ScheduledTask}
  */
 function register(cronExpr = '30 3 * * *', timezone = 'Asia/Phnom_Penh') {
-  return cron.schedule(cronExpr, async () => {
+  return schedule.scheduleJob({ rule: cronExpr, tz: timezone }, async () => {
     await run();
-  }, { timezone });
+  });
 }
 
 /**
