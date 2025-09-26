@@ -43,6 +43,12 @@ Thumbs.db
 *.swo
 *~
 
+# Project documentation (ignore local docs)
+docs/
+documentation/
+backend/docs/
+frontend/docs/
+
 # Logs
 logs
 *.log
