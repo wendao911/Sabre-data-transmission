@@ -8,6 +8,7 @@ import { UploadModal } from './components/UploadModal';
 import { CreateDirectoryModal } from './components/CreateDirectoryModal';
 import { DownloadModal } from './components/DownloadModal';
 import { SyncModal } from './components/SyncModal';
+import SyncProgressModal from './components/SyncProgressModal';
 
 const SFTPTransferPage = () => {
   const {
@@ -68,6 +69,10 @@ const SFTPTransferPage = () => {
     onRefreshLocal,
     onLocalSortChange,
     onLocalPageChange,
+    closeSyncProgress,
+    syncProgressVisible,
+    syncProgressData,
+    syncRunning,
     openLocalCreateDirectory,
     closeLocalCreateDirectory,
     handleLocalCreateDirectorySubmit,
@@ -207,6 +212,14 @@ const SFTPTransferPage = () => {
           <div className="text-xs text-gray-400">说明：将按原文件名上传到指定目录，必要时会自动创建远程目录。</div>
         </div>
       </Modal>
+
+      {/* 同步进度模态框 */}
+      <SyncProgressModal
+        visible={syncProgressVisible}
+        onCancel={closeSyncProgress}
+        syncData={syncProgressData}
+        isRunning={syncRunning}
+      />
     </div>
   );
 };

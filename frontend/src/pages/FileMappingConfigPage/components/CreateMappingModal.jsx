@@ -145,8 +145,8 @@ const CreateMappingModal = ({ visible, onConfirm, onCancel }) => {
                 const period = getFieldValue(['schedule', 'period']);
                 if (period === 'weekly') {
                   return (
-                    <Form.Item name={['schedule', 'weekdays']} label="周几" rules={[{ required: true, message: '请选择周几' }]}>
-                      <Select mode="multiple" placeholder="选择周几">
+                    <Form.Item name={['schedule', 'weekday']} label="周几" rules={[{ required: true, message: '请选择周几' }]}>
+                      <Select placeholder="选择周几">
                         <Option value={1}>周一</Option>
                         <Option value={2}>周二</Option>
                         <Option value={3}>周三</Option>
@@ -160,8 +160,8 @@ const CreateMappingModal = ({ visible, onConfirm, onCancel }) => {
                 }
                 if (period === 'monthly') {
                   return (
-                    <Form.Item name={['schedule', 'monthDays']} label="每月几号" rules={[{ required: true, message: '请选择日期' }]}>
-                      <Select mode="multiple" placeholder="选择日期">
+                    <Form.Item name={['schedule', 'monthday']} label="每月几号" rules={[{ required: true, message: '请选择日期' }]}>
+                      <Select placeholder="选择日期">
                         {Array.from({ length: 31 }).map((_, i) => (
                           <Option key={i + 1} value={i + 1}>{i + 1}号</Option>
                         ))}

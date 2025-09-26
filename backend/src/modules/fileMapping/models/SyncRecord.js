@@ -22,7 +22,14 @@ const sync_session_schema = new mongoose.Schema({
     skippedFiles: { type: Number, default: 0 },
     failedFiles: { type: Number, default: 0 },
     status: { type: String, required: true, enum: ['success', 'partial', 'no_files', 'failed', 'skipped'] },
-    message: { type: String, default: '' }
+    message: { type: String, default: '' },
+    failedFilesDetails: [{ // 失败文件的详细信息
+      filename: { type: String, required: true, trim: true },
+      localPath: { type: String, required: true, trim: true },
+      remotePath: { type: String, required: true, trim: true },
+      errorMessage: { type: String, required: true, trim: true },
+      fileSize: { type: Number, default: 0 }
+    }]
   }],
   createdAt: { type: Date, default: Date.now }
 }, { collection: 'sync_sessions' });

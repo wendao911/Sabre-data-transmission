@@ -34,12 +34,16 @@ const fileMappingRuleSchema = new mongoose.Schema({
       default: 'adhoc',
       required: true
     },
-    weekdays: {
-      type: [Number], // 0-6: 周日-周六
+    weekday: {
+      type: Number, // 0-6: 周日-周六
+      min: 0,
+      max: 6,
       default: undefined
     },
-    monthDays: {
-      type: [Number], // 1-31
+    monthday: {
+      type: Number, // 1-31
+      min: 1,
+      max: 31,
       default: undefined
     }
   },

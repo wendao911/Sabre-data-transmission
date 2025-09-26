@@ -27,14 +27,21 @@ function getFileList(rule, date) {
   // 转义正则特殊字符（但不要转义花括号，因为已经处理了日期变量）
   const escapedPattern = processedPattern.replace(/[.+^$()|\[\]\\]/g, '\\$&');
   
-  const regex = new RegExp('^' + escapedPattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$', 'i');
+  // 处理文件扩展名的大小写问题：\.TXT 应该匹配 .TXT 或 .txt
+  let finalPattern = escapedPattern.replace(/\*/g, '.*').replace(/\?/g, '.');
+  finalPattern = finalPattern.replace(/\\\.([A-Z0-9]+)$/i, '\\.$1');
+  
+  const regex = new RegExp('^' + finalPattern + '$', 'i');
   const allFiles = fs.readdirSync(fullDir);
   const matchedFiles = allFiles.filter(filename => {
-    const filePath = path.join(fullDir, filename);
-    const stat = fs.statSync(filePath);
-    return stat.isFile() && regex.test(filename);
+    const stat = fs.statSync(path.join(fullDir, filename));
+    if (!stat.isFile()) return false;
+    
+    // 给文件名加上后缀进行匹配
+    const ext = path.extname(filename);
+    const filenameWithExt = filename + ext;
+    return regex.test(filenameWithExt);
   });
-  console.log(`找到 ${matchedFiles.length} 个匹配文件:`, matchedFiles);
   return { files: matchedFiles, fullDir };
 }
 
@@ -47,7 +54,6 @@ function getFileList(rule, date) {
 function parseDestinationPath(rule, date) {
   const destPath = rule.destination?.path || '/';
   const parsedPath = replaceDateVariables(destPath, date);
-  console.log(`解析目标路径: ${destPath} -> ${parsedPath}`);
   return parsedPath;
 }
 
@@ -67,7 +73,6 @@ function parseFilenameTemplate(rule, filename) {
     .replace(/{baseName}/g, baseName)
     .replace(/{ext}/g, ext);
   
-  console.log(`解析文件名模板: ${template} -> ${parsedFilename} (${filename})`);
   return parsedFilename;
 }
 
@@ -79,8 +84,6 @@ function parseFilenameTemplate(rule, filename) {
  * @returns {Object} 处理结果 { action, finalPath, message }
  */
 async function handleConflictStrategy(conflictStrategy, remotePath, filename) {
-  console.log(`处理冲突策略: ${conflictStrategy}, 路径: ${remotePath}`);
-  
   switch (conflictStrategy) {
     case 'skip':
       // 跳过策略：检查文件是否存在
@@ -99,7 +102,6 @@ async function handleConflictStrategy(conflictStrategy, remotePath, filename) {
           message: '文件不存在，可以上传'
         };
       } catch (error) {
-        console.warn(`检查文件是否存在失败: ${error.message}`);
         return {
           action: 'upload',
           finalPath: remotePath,
@@ -134,7 +136,6 @@ async function handleConflictStrategy(conflictStrategy, remotePath, filename) {
           finalPath = path.posix.join(dir, `${name}_${counter}${ext}`);
           counter++;
         } catch (error) {
-          console.warn(`检查重命名文件是否存在失败: ${error.message}`);
           break;
         }
       }
@@ -147,7 +148,6 @@ async function handleConflictStrategy(conflictStrategy, remotePath, filename) {
       
     default:
       // 默认使用跳过策略
-      console.warn(`未知的冲突策略: ${conflictStrategy}，使用默认的skip策略`);
       return await handleConflictStrategy('skip', remotePath, filename);
   }
 }
@@ -159,8 +159,6 @@ async function handleConflictStrategy(conflictStrategy, remotePath, filename) {
  * @returns {Object} 上传结果 { success, message }
  */
 async function uploadFileToSFTP(localPath, remotePath) {
-  console.log(`开始上传文件: ${localPath} -> ${remotePath}`);
-  
   try {
     // 检查本地文件是否存在
     if (!fs.existsSync(localPath)) {
@@ -174,19 +172,15 @@ async function uploadFileToSFTP(localPath, remotePath) {
     const stats = fs.statSync(localPath);
     const fileSize = stats.size;
     
-    console.log(`文件大小: ${fileSize} bytes`);
-    
     // 调用SFTP服务上传文件
     const uploadResult = await sftpService.uploadFile(localPath, remotePath);
     
     if (uploadResult.success) {
-      console.log(`文件上传成功: ${remotePath}`);
       return {
         success: true,
         message: `上传成功 (${fileSize} bytes)`
       };
     } else {
-      console.error(`文件上传失败: ${uploadResult.message}`);
       return {
         success: false,
         message: uploadResult.message || '上传失败'
@@ -194,7 +188,6 @@ async function uploadFileToSFTP(localPath, remotePath) {
     }
     
   } catch (error) {
-    console.error(`上传文件异常: ${error.message}`);
     return {
       success: false,
       message: `上传异常: ${error.message}`
@@ -210,8 +203,6 @@ async function uploadFileToSFTP(localPath, remotePath) {
  * @returns {Object} 记录结果 { success, message }
  */
 async function recordSyncSession(date, startTime, results) {
-  console.log(`记录同步会话: 日期=${date}, 开始时间=${startTime}`);
-  
   try {
     const endTime = new Date();
     const duration = endTime.getTime() - startTime.getTime();
@@ -228,13 +219,15 @@ async function recordSyncSession(date, startTime, results) {
       skippedFiles: results.skipped || 0,
       failedFiles: results.failed || 0,
       status: results.failed > 0 ? 'partial' : (results.synced > 0 ? 'success' : 'no_files'),
-      ruleResults: results.details || []
+      ruleResults: (results.details || []).map(ruleResult => ({
+        ...ruleResult,
+        failedFilesDetails: ruleResult.failedFilesDetails || []
+      }))
     });
     
     // 保存到数据库
     await syncSession.save();
     
-    console.log(`同步会话已保存: ${syncSession._id}`);
     return {
       success: true,
       message: '同步会话记录成功',
@@ -242,7 +235,6 @@ async function recordSyncSession(date, startTime, results) {
     };
     
   } catch (error) {
-    console.error(`记录同步会话失败: ${error.message}`);
     return {
       success: false,
       message: `记录失败: ${error.message}`
@@ -265,8 +257,6 @@ async function recordSyncSession(date, startTime, results) {
  * @returns {Object} 同步结果
  */
 async function processRuleSync(rule, date, periodType) {
-  console.log(`执行${periodType}同步: 规则=${rule.description || rule._id}, 日期=${date}`);
-  
   const startTime = new Date();
   const results = { 
     totalFiles: 0, 
@@ -274,6 +264,7 @@ async function processRuleSync(rule, date, periodType) {
     skipped: 0, 
     failed: 0, 
     details: [],
+    failedFilesDetails: [], // 失败文件的详细信息
     startTime: startTime
   };
 
@@ -281,26 +272,22 @@ async function processRuleSync(rule, date, periodType) {
     // 1. 根据规则获取文件列表
     const fileResult = getFileList(rule, date);
     if (!fileResult.files || fileResult.files.length === 0) {
-      console.log(`规则 ${rule._id} 没有找到匹配的文件`);
       results.status = 'no_files';
       await recordSyncResult(rule, date, periodType, results);
       return { success: true, message: '没有找到匹配的文件', data: results };
     }
     
     results.totalFiles = fileResult.files.length;
-    console.log(`找到 ${fileResult.files.length} 个文件:`, fileResult.files);
 
     // 2. 解析目标路径（支持日期变量）
     const destPath = parseDestinationPath(rule, date);
     
     // 3. 解析冲突策略
     const conflictStrategy = rule.destination?.conflict || 'skip';
-    console.log(`冲突策略: ${conflictStrategy}`);
 
     // 4. 循环处理每个文件
     for (const filename of fileResult.files) {
       try {
-        console.log(`处理文件: ${filename}`);
         
         // 3. 解析文件名模板（支持baseName、ext变量）
         const destFilename = parseFilenameTemplate(rule, filename);
@@ -317,7 +304,6 @@ async function processRuleSync(rule, date, periodType) {
             message: conflictResult.message,
             remotePath: conflictResult.finalPath
           });
-          console.log(`文件跳过: ${filename} - ${conflictResult.message}`);
           continue;
         }
         
@@ -333,21 +319,42 @@ async function processRuleSync(rule, date, periodType) {
             message: uploadResult.message,
             remotePath: conflictResult.finalPath
           });
-          console.log(`文件上传成功: ${filename} -> ${conflictResult.finalPath}`);
         } else {
           results.failed++;
+          const localPath = path.join(fileResult.fullDir, filename);
+          const fileStats = fs.statSync(localPath);
+          results.failedFilesDetails.push({
+            filename,
+            localPath,
+            remotePath: conflictResult.finalPath,
+            errorMessage: uploadResult.message,
+            fileSize: fileStats.size
+          });
           results.details.push({
             filename,
             status: 'failed',
             message: uploadResult.message,
             remotePath: conflictResult.finalPath
           });
-          console.error(`文件上传失败: ${filename} - ${uploadResult.message}`);
         }
         
       } catch (error) {
-        console.error(`处理文件 ${filename} 异常:`, error);
         results.failed++;
+        const localPath = path.join(fileResult.fullDir, filename);
+        let fileSize = 0;
+        try {
+          const fileStats = fs.statSync(localPath);
+          fileSize = fileStats.size;
+        } catch (statError) {
+          // 文件不存在或无法获取大小
+        }
+        results.failedFilesDetails.push({
+          filename,
+          localPath,
+          remotePath: '', // 无法确定远程路径
+          errorMessage: error.message,
+          fileSize
+        });
         results.details.push({
           filename,
           status: 'error',
@@ -359,7 +366,6 @@ async function processRuleSync(rule, date, periodType) {
     // 6. 设置状态
     results.status = results.failed > 0 ? 'partial' : (results.synced > 0 ? 'success' : 'no_files');
     
-    console.log(`${periodType}同步完成: 成功=${results.synced}, 跳过=${results.skipped}, 失败=${results.failed}`);
     
     return { 
       success: true, 
@@ -368,7 +374,6 @@ async function processRuleSync(rule, date, periodType) {
     };
     
   } catch (error) {
-    console.error(`${periodType}同步失败:`, error);
     results.status = 'failed';
     results.details.push({
       error: error.message,
@@ -451,7 +456,6 @@ async function processMonthlySync(rule, date) {
  * @returns 
  */
 async function processAdhocSync(rule, date) {
-  console.log(`执行非固定同步: 规则=${rule.description || rule._id}, 日期=${date}`);
   
   const startTime = new Date();
   const results = { 
@@ -467,25 +471,21 @@ async function processAdhocSync(rule, date) {
     // 1. 根据规则获取文件列表
     const fileResult = getFileList(rule, date);
     if (!fileResult.files || fileResult.files.length === 0) {
-      console.log(`规则 ${rule._id} 没有找到匹配的文件`);
       results.status = 'no_files';
       return { success: true, message: '没有找到匹配的文件', data: results };
     }
     
     results.totalFiles = fileResult.files.length;
-    console.log(`找到 ${fileResult.files.length} 个文件:`, fileResult.files);
 
     // 2. 解析目标路径（支持日期变量）
     const destPath = parseDestinationPath(rule, date);
     
     // 3. 解析冲突策略
     const conflictStrategy = rule.destination?.conflict || 'skip';
-    console.log(`冲突策略: ${conflictStrategy}`);
 
     // 4. 循环处理每个文件
     for (const filename of fileResult.files) {
       try {
-        console.log(`处理文件: ${filename}`);
         
         // 检查文件是否已经同步过
         const existingRecord = await AdhocFileSync.findOne({
@@ -502,7 +502,6 @@ async function processAdhocSync(rule, date) {
             message: '文件已同步过，跳过',
             remotePath: ''
           });
-          console.log(`文件已同步过，跳过: ${filename}`);
           continue;
         }
         
@@ -521,7 +520,6 @@ async function processAdhocSync(rule, date) {
             message: conflictResult.message,
             remotePath: conflictResult.finalPath
           });
-          console.log(`文件跳过: ${filename} - ${conflictResult.message}`);
           continue;
         }
         
@@ -537,7 +535,6 @@ async function processAdhocSync(rule, date) {
             message: uploadResult.message,
             remotePath: conflictResult.finalPath
           });
-          console.log(`文件上传成功: ${filename} -> ${conflictResult.finalPath}`);
           
           // 为每个成功同步的文件插入一条记录
           const localPath = path.join(fileResult.fullDir, filename);
@@ -558,7 +555,6 @@ async function processAdhocSync(rule, date) {
           });
           
           await fileRecord.save();
-          console.log(`文件同步记录已保存: ${filename}`);
           
         } else {
           results.failed++;
@@ -568,11 +564,9 @@ async function processAdhocSync(rule, date) {
             message: uploadResult.message,
             remotePath: conflictResult.finalPath
           });
-          console.error(`文件上传失败: ${filename} - ${uploadResult.message}`);
         }
         
       } catch (error) {
-        console.error(`处理文件 ${filename} 异常:`, error);
         results.failed++;
         results.details.push({
           filename,
@@ -585,7 +579,6 @@ async function processAdhocSync(rule, date) {
     // 5. 设置状态
     results.status = results.failed > 0 ? 'partial' : (results.synced > 0 ? 'success' : 'no_files');
     
-    console.log(`非固定同步完成: 成功=${results.synced}, 跳过=${results.skipped}, 失败=${results.failed}`);
     
     return { 
       success: true, 
@@ -594,7 +587,6 @@ async function processAdhocSync(rule, date) {
     };
     
   } catch (error) {
-    console.error(`非固定同步失败:`, error);
     results.status = 'failed';
     results.details.push({
       error: error.message,
@@ -658,7 +650,8 @@ async function syncByMapping(dateStr) {
           syncedFiles: ruleResult.data.synced || 0,
           skippedFiles: ruleResult.data.skipped || 0,
           failedFiles: ruleResult.data.failed || 0,
-          message: ruleResult.message || ''
+          message: ruleResult.message || '',
+          failedFilesDetails: ruleResult.data.failedFilesDetails || []
         });
       } else {
         // 处理跳过的情况（如周几不匹配）
@@ -677,7 +670,6 @@ async function syncByMapping(dateStr) {
       }
       
     } catch (e) {
-      console.error(`处理规则失败: ${rule._id}`, e);
       results.details.push({ 
         ruleId: rule._id, 
         ruleName: rule.description || rule.name || '未命名规则',
@@ -696,7 +688,6 @@ async function syncByMapping(dateStr) {
   // 记录同步会话
   const sessionResult = await recordSyncSession(dateStr, startTime, results);
   
-  console.log(`同步完成统计: 总规则=${results.totalRules}, 总文件=${results.totalFiles}, 成功=${results.synced}, 跳过=${results.skipped}, 失败=${results.failed}`);
   return { 
     success: true, 
     data: results,

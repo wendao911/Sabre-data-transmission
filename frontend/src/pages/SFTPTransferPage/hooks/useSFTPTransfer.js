@@ -41,6 +41,11 @@ export const useSFTPTransfer = () => {
   const [transferTarget, setTransferTarget] = useState(null);
   const [transfering, setTransfering] = useState(false);
   const [transferProgress, setTransferProgress] = useState(0);
+  // 同步进度相关状态
+  const [syncProgressVisible, setSyncProgressVisible] = useState(false);
+  const [syncProgressData, setSyncProgressData] = useState(null);
+  const [syncRunning, setSyncRunning] = useState(false);
+  const [syncInterval, setSyncInterval] = useState(null);
   // 远端目录使用右侧 SFTP 浏览器当前目录 currentPath
 
   useEffect(() => {
@@ -271,6 +276,17 @@ export const useSFTPTransfer = () => {
     document.body.removeChild(a);
   };
 
+  // 关闭同步进度模态框
+  const closeSyncProgress = () => {
+    if (syncInterval) {
+      clearInterval(syncInterval);
+      setSyncInterval(null);
+    }
+    setSyncProgressVisible(false);
+    setSyncRunning(false);
+    setSyncProgressData(null);
+  };
+
   const openTransferModal = (item) => {
     if (item?.isDirectory) return;
     setTransferTarget(item);
@@ -437,17 +453,39 @@ export const useSFTPTransfer = () => {
       return;
     }
     setSyncLoading(true);
+    setSyncRunning(true);
+    setSyncProgressVisible(true);
+    setSyncProgressData({
+      totalFiles: 0,
+      synced: 0,
+      skipped: 0,
+      failed: 0,
+      ruleResults: []
+    });
+    
     try {
       const day = typeof syncDate === 'string' ? syncDate : (syncDate?.format ? syncDate.format('YYYY-MM-DD') : new Date(syncDate).toISOString().slice(0,10));
       const resp = await apiClient.getClient().post('/sftp/sync/by-mapping', { date: day });
+      
       if (resp?.data?.success) {
         const data = resp.data.data;
+        console.log('同步返回数据:', data);
+        // 确保 ruleResults 字段存在
+        const progressData = {
+          ...data,
+          ruleResults: data.details || data.ruleResults || []
+        };
+        console.log('处理后的进度数据:', progressData);
+        setSyncProgressData(progressData);
+        setSyncRunning(false);
         toast.success(`同步完成：成功 ${data.synced}，跳过 ${data.skipped}，失败 ${data.failed}`);
         await loadDirectoryList(currentPath || '/');
       } else {
+        setSyncRunning(false);
         toast.error(resp?.data?.message || '同步失败');
       }
     } catch (e) {
+      setSyncRunning(false);
       toast.error('同步失败: ' + e.message);
     } finally {
       setSyncLoading(false);
@@ -541,6 +579,10 @@ export const useSFTPTransfer = () => {
     closeTransferModal,
     submitTransferToSftp,
     syncByMapping,
+    closeSyncProgress,
+    syncProgressVisible,
+    syncProgressData,
+    syncRunning,
     openLocalCreateDirectory,
     closeLocalCreateDirectory,
     handleLocalCreateDirectorySubmit,
