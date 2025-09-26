@@ -5,7 +5,7 @@ const morgan = require('morgan');
 const path = require('path');
 const config = require('./config');
 const mongoose = require('mongoose');
-const schedulerService = require('./modules/schedule/services');
+const { registerAllJobs } = require('./jobs/registry');
 
 const app = express();
 const ENV = config.server.nodeEnv || process.env.NODE_ENV || 'development';
@@ -101,12 +101,12 @@ async function start() {
       console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
     });
 
-    // 初始化调度服务（读取DB配置并启动任务）
+    // 注册基于 DB 配置的 jobs（只负责执行，配置存放在 schedule 模块）
     try {
-      await schedulerService.loadAndStartAll();
-      console.log('⏲️  定时任务已初始化');
+      await registerAllJobs();
+      console.log('⏲️  Jobs 已根据配置完成注册');
     } catch (e) {
-      console.error('定时任务初始化失败:', e.message);
+      console.error('Jobs 注册失败:', e.message);
     }
   } catch (err) {
     console.error('❌ 连接 MongoDB 失败：', err);
