@@ -32,7 +32,8 @@ module.exports = {
     expiresIn: '7d'
   },
   cors: {
-    origin: 'http://localhost:3000'
+    // 允许前端开发站点来源
+    origin: 'http://172.24.176.1:3001'
   },
   file: {
     maxSize: 10485760,
