@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  Table, 
   Button, 
   Space, 
   Tag, 
@@ -18,6 +17,7 @@ import {
   SwapOutlined
 } from '@ant-design/icons';
 import { useLanguage } from '../hooks/useLanguage';
+import { ModernTable, ModernPagination } from '../../../components/Common';
 
 const FileMappingList = ({
   rules,
@@ -275,7 +275,7 @@ const FileMappingList = ({
   ];
 
   return (
-    <Table
+    <ModernTable
       columns={columns}
       dataSource={rules}
       loading={loading}
@@ -286,7 +286,7 @@ const FileMappingList = ({
         total: pagination.total,
         showSizeChanger: true,
         showQuickJumper: true,
-        showTotal: (total) => t('totalRules', { total }),
+        showTotal: (total, range) => `共 ${total} 条记录，显示第 ${range[0]}-${range[1]} 条`,
         pageSizeOptions: ['10', '20', '50', '100'],
         onChange: onPageChange,
         onShowSizeChange: onPageChange,

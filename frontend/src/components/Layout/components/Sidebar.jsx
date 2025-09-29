@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons';
 import { useLocation } from 'react-router-dom';
 import logo from '../../../assets/logo.png';
+import logoCollapsed from '../../../assets/logo-2.png';
 
 const { Sider } = AntLayout;
 
@@ -80,7 +81,7 @@ const Sidebar = ({ collapsed, onMenuClick, t }) => {
       <div className="h-16 flex items-center justify-center border-b border-gray-200">
         {collapsed ? (
           <img 
-            src={logo} 
+            src={logoCollapsed} 
             alt="Logo" 
             className="h-10 w-auto mx-auto"
           />

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Card, Typography } from 'antd';
+import { Card } from 'antd';
 import { CloudUploadOutlined } from '@ant-design/icons';
 import { useSFTPConfig } from './hooks/useSFTPConfig';
 import { useLanguage } from './hooks/useLanguage';
 import ConfigToolbar from './components/ConfigToolbar';
 import ConfigList from './components/ConfigList';
 import ConfigForm from './components/ConfigForm';
+import { PageTitle, PageContainer } from '../../components/Common';
 
-const { Title, Paragraph } = Typography;
 
 const SFTPConnectionConfigPage = () => {
   const [formVisible, setFormVisible] = useState(false);
@@ -77,15 +77,12 @@ const SFTPConnectionConfigPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="flex items-center space-x-3">
-        <CloudUploadOutlined className="text-2xl text-blue-600" />
-        <div>
-          <Title level={2} className="!mb-0">{t('pageTitle')}</Title>
-          <Paragraph className="!mb-0 text-gray-600">{t('pageDescription')}</Paragraph>
-        </div>
-      </div>
+    <PageContainer>
+      <PageTitle
+        title={t('pageTitle')}
+        subtitle={t('pageDescription')}
+        icon={<CloudUploadOutlined />}
+      />
 
       {/* 配置内容 */}
       <Card>
@@ -119,7 +116,7 @@ const SFTPConnectionConfigPage = () => {
         loading={formLoading}
         t={t}
       />
-    </div>
+    </PageContainer>
   );
 };
 

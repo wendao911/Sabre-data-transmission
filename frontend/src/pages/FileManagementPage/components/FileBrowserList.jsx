@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Button, Space, Tag, Tooltip, message } from 'antd';
+import { Button, Space, Tag, Tooltip, message } from 'antd';
 import { 
   FolderOutlined, 
   FileOutlined, 
@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons';
 import { timezoneUtils } from '../../../utils/timezone';
 import { useLanguage } from '../hooks/useLanguage';
+import { ModernTable } from '../../../components/Common';
 
 const FileBrowserList = ({
   files,
@@ -170,7 +171,7 @@ const FileBrowserList = ({
   ];
 
   return (
-    <Table
+    <ModernTable
       columns={columns}
       dataSource={files}
       rowKey="fullPath"
@@ -182,7 +183,7 @@ const FileBrowserList = ({
         showSizeChanger: true,
         showQuickJumper: true,
         showTotal: (total, range) => 
-          `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+          `共 ${total} 条记录，显示第 ${range[0]}-${range[1]} 条`,
         onChange: onPageChange,
         onShowSizeChange: (current, size) => {
           onPageChange(1, size);

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Modal, Progress, Button, Space, Typography } from 'antd';
-import { ReloadOutlined, CloudServerOutlined } from '@ant-design/icons';
+import { Modal, Progress } from 'antd';
+import { CloudServerOutlined } from '@ant-design/icons';
 import { useSFTPTransfer } from './hooks/useSFTPTransfer';
 import { useLanguage } from './hooks/useLanguage';
 import { ConnectionConfig } from './components/ConnectionConfig';
@@ -9,8 +9,8 @@ import { LocalFileBrowser } from './components/LocalFileBrowser';
 import { CreateDirectoryModal } from './components/CreateDirectoryModal';
 import { SyncModal } from './components/SyncModal';
 import SyncProgressModal from './components/SyncProgressModal';
+import { PageTitle, PageContainer } from '../../components/Common';
 
-const { Title, Paragraph } = Typography;
 
 const SFTPTransferPage = () => {
   const { t } = useLanguage();
@@ -86,32 +86,14 @@ const SFTPTransferPage = () => {
     setSyncDate
   } = useSFTPTransfer();
 
-  const handleRefreshAll = () => {
-    onRefresh();
-    onRefreshLocal();
-  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <CloudServerOutlined className="text-2xl text-blue-600" />
-          <div>
-            <Title level={2} className="!mb-0">{t('pageTitle')}</Title>
-            <Paragraph className="!mb-0 text-gray-600">{t('pageDescription')}</Paragraph>
-          </div>
-        </div>
-        <Space>
-          <Button 
-            type="primary" 
-            icon={<ReloadOutlined />}
-            onClick={handleRefreshAll}
-            loading={listLoading || localLoading}
-          >
-            {t('refresh')}
-          </Button>
-        </Space>
-      </div>
+    <PageContainer>
+      <PageTitle
+        title={t('pageTitle')}
+        subtitle={t('pageDescription')}
+        icon={<CloudServerOutlined />}
+      />
 
       <ConnectionConfig
         activeFtpConfig={activeFtpConfig}
@@ -219,7 +201,7 @@ const SFTPTransferPage = () => {
         syncData={syncProgressData}
         isRunning={syncRunning}
       />
-    </div>
+    </PageContainer>
   );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Typography } from 'antd';
+import { Card } from 'antd';
 import { FolderOutlined } from '@ant-design/icons';
 import { useFileManagementPage } from './hooks/useFileManagementPage';
 import FileBrowserToolbar from './components/FileBrowserToolbar';
@@ -7,8 +7,8 @@ import FileBrowserList from './components/FileBrowserList';
 import CreateDirectoryModal from './components/CreateDirectoryModal';
 import UploadFileModal from './components/UploadFileModal';
 import { useLanguage } from './hooks/useLanguage';
+import { PageTitle, PageContainer } from '../../components/Common';
 
-const { Title, Paragraph } = Typography;
 
 const FileManagementPage = () => {
   const { t } = useLanguage();
@@ -43,17 +43,12 @@ const FileManagementPage = () => {
   } = useFileManagementPage();
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="flex items-center space-x-3">
-        <FolderOutlined className="text-2xl text-blue-600" />
-        <div>
-          <Title level={2} className="!mb-0">{t('pageTitle')}</Title>
-          <Paragraph className="!mb-0 text-gray-600">
-            {t('pageDescription')} - 当前路径: {currentPath || '/'}
-          </Paragraph>
-        </div>
-      </div>
+    <PageContainer>
+      <PageTitle
+        title={t('pageTitle')}
+        subtitle={`${t('pageDescription')} - 当前路径: ${currentPath || '/'}`}
+        icon={<FolderOutlined />}
+      />
 
       {/* 文件浏览器内容 */}
       <Card>
@@ -99,7 +94,7 @@ const FileManagementPage = () => {
         onConfirm={handleUploadConfirm}
         onCancel={handleUploadCancel}
       />
-    </div>
+    </PageContainer>
   );
 };
 

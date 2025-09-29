@@ -83,18 +83,10 @@ const ConnectionConfig = ({
               <span className="font-medium">{activeFtpConfig.sftpPort || 22}</span>
             </div>
           </Col>
-          <Col span={4}>
+          <Col span={8}>
             <div>
               <span className="text-gray-500">{t('conn_user')}：</span>
               <span className="font-medium">{activeFtpConfig.user || '-'}</span>
-            </div>
-          </Col>
-          <Col span={4}>
-            <div>
-              <span className="text-gray-500">{t('conn_userType')}：</span>
-              <Tag color={activeFtpConfig.userType === 'authenticated' ? 'blue' : 'orange'}>
-                {activeFtpConfig.userType === 'authenticated' ? t('conn_user_normal') : t('conn_user_anonymous')}
-              </Tag>
             </div>
           </Col>
         </Row>

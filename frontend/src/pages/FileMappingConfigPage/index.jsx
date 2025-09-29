@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Typography } from 'antd';
+import { Card } from 'antd';
 import { SwapOutlined } from '@ant-design/icons';
 import { useFileMappingPage } from './hooks/useFileMappingPage';
 import FileMappingToolbar from './components/FileMappingToolbar';
@@ -8,8 +8,8 @@ import CreateMappingModal from './components/CreateMappingModal';
 import EditMappingModal from './components/EditMappingModal';
 import ViewMappingModal from './components/ViewMappingModal';
 import { useLanguage } from './hooks/useLanguage';
+import { PageTitle, PageContainer } from '../../components/Common';
 
-const { Title, Paragraph } = Typography;
 
 const FileMappingConfigPage = () => {
   const { t } = useLanguage();
@@ -42,17 +42,12 @@ const FileMappingConfigPage = () => {
   } = useFileMappingPage();
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="flex items-center space-x-3">
-        <SwapOutlined className="text-2xl text-blue-600" />
-        <div>
-          <Title level={2} className="!mb-0">{t('pageTitle')}</Title>
-          <Paragraph className="!mb-0 text-gray-600">
-            {t('pageDescription')}
-          </Paragraph>
-        </div>
-      </div>
+    <PageContainer>
+      <PageTitle
+        title={t('pageTitle')}
+        subtitle={t('pageDescription')}
+        icon={<SwapOutlined />}
+      />
 
       {/* 文件映射内容 */}
       <Card>
@@ -99,7 +94,7 @@ const FileMappingConfigPage = () => {
         rule={viewingRule}
         onCancel={handleViewCancel}
       />
-    </div>
+    </PageContainer>
   );
 };
 

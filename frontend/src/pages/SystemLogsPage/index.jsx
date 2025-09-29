@@ -4,6 +4,7 @@ import { ReloadOutlined, SearchOutlined, DownloadOutlined, DeleteOutlined, InfoC
 import { useLanguage } from './hooks/useLanguage';
 import { systemLogsService } from './services/systemLogsService';
 import TransferLogDetailsModal from './components/TransferLogDetailsModal';
+import { PageTitle, ModernTable, ModernPagination, PageContainer } from '../../components/Common';
 // 使用原生 Date 对象处理日期
 const formatDate = (date, format = 'YYYY-MM-DD HH:mm:ss') => {
   if (!date) return '-';
@@ -883,54 +884,12 @@ const SystemLogsPage = () => {
           }
         `}
       </style>
-      <div className="p-6" style={{ background: '#f8f9fa', minHeight: '100vh' }}>
-      <div 
-        className="mb-6" 
-        style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          padding: '24px',
-          borderRadius: '16px',
-          color: 'white',
-          boxShadow: '0 8px 32px rgba(102,126,234,0.3)'
-        }}
-      >
-        <Title 
-          level={2} 
-          className="mb-3" 
-          style={{ 
-            color: 'white', 
-            margin: 0,
-            fontSize: '28px',
-            fontWeight: '600',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}
-        >
-          <div 
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              padding: '8px',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <FileTextOutlined style={{ fontSize: '24px' }} />
-          </div>
-          {t('systemLogs')}
-        </Title>
-        <Text 
-          style={{ 
-            color: 'rgba(255,255,255,0.9)', 
-            fontSize: '16px',
-            lineHeight: '1.6'
-          }}
-        >
-          {t('systemLogsDescription')}
-        </Text>
-      </div>
+      <PageContainer>
+        <PageTitle
+          title={t('systemLogs')}
+          subtitle={t('systemLogsDescription')}
+          icon={<FileTextOutlined />}
+        />
 
 
 
@@ -949,7 +908,7 @@ const SystemLogsPage = () => {
         >
           <TabPane tab={t('systemLogsTab')} key="system">
             <SystemLogFilter />
-            <Table
+            <ModernTable
               columns={systemLogColumns}
               dataSource={systemLogs}
               loading={loading}
@@ -959,7 +918,7 @@ const SystemLogsPage = () => {
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) => 
-                  `${range[0]}-${range[1]} of ${total} items`,
+                  `共 ${total} 条记录，显示第 ${range[0]}-${range[1]} 条`,
                 style: {
                   marginTop: '16px',
                   textAlign: 'right'
@@ -967,17 +926,12 @@ const SystemLogsPage = () => {
               }}
               rowKey="_id"
               scroll={{ x: 1000 }}
-              style={{
-                borderRadius: '8px',
-                overflow: 'hidden'
-              }}
-              className="modern-table"
             />
           </TabPane>
           
           <TabPane tab={t('decryptLogsTab')} key="decrypt">
             <DecryptLogFilter />
-            <Table
+            <ModernTable
               columns={decryptLogColumns}
               dataSource={decryptLogs}
               loading={loading}
@@ -987,24 +941,19 @@ const SystemLogsPage = () => {
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) => 
-                  `${range[0]}-${range[1]} of ${total} items`,
+                  `共 ${total} 条记录，显示第 ${range[0]}-${range[1]} 条`,
                 style: {
                   marginTop: '16px',
                   textAlign: 'right'
                 }
               }}
               rowKey="_id"
-              style={{
-                borderRadius: '8px',
-                overflow: 'hidden'
-              }}
-              className="modern-table"
             />
           </TabPane>
           
           <TabPane tab={t('transferLogsTab')} key="transfer">
             <TransferLogFilter />
-            <Table
+            <ModernTable
               columns={transferLogColumns}
               dataSource={transferLogs}
               loading={loading}
@@ -1014,7 +963,7 @@ const SystemLogsPage = () => {
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) => 
-                  `${range[0]}-${range[1]} of ${total} items`,
+                  `共 ${total} 条记录，显示第 ${range[0]}-${range[1]} 条`,
                 style: {
                   marginTop: '16px',
                   textAlign: 'right'
@@ -1022,11 +971,6 @@ const SystemLogsPage = () => {
               }}
               rowKey="_id"
               scroll={{ x: 1000 }}
-              style={{
-                borderRadius: '8px',
-                overflow: 'hidden'
-              }}
-              className="modern-table"
             />
           </TabPane>
         </Tabs>
@@ -1102,7 +1046,7 @@ const SystemLogsPage = () => {
           </div>
         )}
       </Modal>
-      </div>
+      </PageContainer>
     </>
   );
 };

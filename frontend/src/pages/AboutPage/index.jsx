@@ -1,7 +1,8 @@
 import React from 'react';
-import { Card, Typography, Row, Col, Table } from 'antd';
+import { Card, Row, Col } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
+import { PageTitle, PageContainer, ModernTable } from '../../components/Common';
 
-const { Title } = Typography;
 
 function AboutPage() {
   const buildDate = new Date(2025, 8, 10).toLocaleDateString();
@@ -17,19 +18,21 @@ function AboutPage() {
   ];
 
   return (
-    <div className="px-6 pb-6 pt-0 space-y-6">
-      <div className="flex justify-between items-center">
-        <Title level={2} className="!m-0">关于应用</Title>
-      </div>
+    <PageContainer>
+      <PageTitle
+        title="关于应用"
+        subtitle="应用版本信息和开发者信息"
+        icon={<InfoCircleOutlined />}
+      />
 
       <Row gutter={16}>
         <Col span={24}>
           <Card>
-            <Table size="middle" pagination={false} columns={columns} dataSource={dataSource} rowKey="key" />
+            <ModernTable size="middle" pagination={false} columns={columns} dataSource={dataSource} rowKey="key" />
           </Card>
         </Col>
       </Row>
-    </div>
+    </PageContainer>
   );
 }
 

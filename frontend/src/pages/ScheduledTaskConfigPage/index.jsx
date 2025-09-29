@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Card, Typography, Space, Button } from 'antd';
+import { Card, Space, Button } from 'antd';
 import { ClockCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useScheduledTasks } from './hooks/useScheduledTasks';
 import { useLanguage } from './hooks/useLanguage';
 import TaskList from './components/TaskList';
 import TaskEditForm from './components/TaskEditForm';
+import { PageTitle, PageContainer } from '../../components/Common';
 
-const { Title, Paragraph } = Typography;
 
 const ScheduledTaskConfigPage = () => {
   const [editVisible, setEditVisible] = useState(false);
@@ -52,21 +52,18 @@ const ScheduledTaskConfigPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="flex items-center space-x-3">
-        <ClockCircleOutlined className="text-2xl text-blue-600" />
-        <div>
-          <Title level={2} className="!mb-0">{t('pageTitle')}</Title>
-          <Paragraph className="!mb-0 text-gray-600">{t('pageDescription')}</Paragraph>
-        </div>
-      </div>
+    <PageContainer>
+      <PageTitle
+        title={t('pageTitle')}
+        subtitle={t('pageDescription')}
+        icon={<ClockCircleOutlined />}
+      />
 
       {/* 工具栏 */}
       <Card>
         <div className="flex justify-between items-center mb-4">
           <div>
-            <Title level={4} className="!mb-0">定时任务列表</Title>
+            <h4 className="text-lg font-semibold mb-0">定时任务列表</h4>
             <span className="text-gray-500 text-sm">
               共 {tasks.length} 个任务
             </span>
@@ -102,7 +99,7 @@ const ScheduledTaskConfigPage = () => {
         loading={formLoading}
         t={t}
       />
-    </div>
+    </PageContainer>
   );
 };
 
