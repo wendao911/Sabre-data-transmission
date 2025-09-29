@@ -1,6 +1,7 @@
 const schedule = require('node-schedule');
 const { batchProcessFiles } = require('../../modules/decrypt/services/decryptService');
 const { SystemLog } = require('../../modules/system/models/SystemLog');
+const { SystemLogService } = require('../../modules/system');
 const { ScheduleConfig } = require('../../modules/schedule/models');
 const { formatDate } = require('../../utils/date');
 
@@ -14,15 +15,19 @@ const { formatDate } = require('../../utils/date');
  * @returns {Promise<{success: boolean, skipped?: boolean, reason?: string, date?: string, result?: any, error?: string}>}
  */
 async function run(params = {}) {
+  // 记录任务开始
+  await SystemLogService.logSchedulerStatus('task_start', '解密任务开始执行', {
+    taskType: 'decrypt',
+    force: params.force || false,
+    date: params.date || 'auto'
+  });
+
   // 读取数据库配置：是否启用、任务参数
   const cfg = await ScheduleConfig.findOne({ taskType: 'decrypt' }).lean();
   if (cfg && cfg.enabled === false && params.force !== true) {
-    await SystemLog.create({
-      level: 'info',
-      module: 'decrypt',
-      action: 'daily_decrypt',
-      message: '解密任务已禁用，跳过执行',
-      details: { reason: 'disabled_in_db' }
+    await SystemLogService.logSchedulerStatus('task_skipped', '解密任务已禁用，跳过执行', {
+      reason: 'disabled_in_db',
+      taskType: 'decrypt'
     });
     return { success: true, skipped: true, reason: 'disabled' };
   }
@@ -35,25 +40,31 @@ async function run(params = {}) {
   try {
     const result = await batchProcessFiles(date);
     const durationMs = Date.now() - start;
+    
     // 更新 lastRunAt
     try { await ScheduleConfig.findOneAndUpdate({ taskType: 'decrypt' }, { lastRunAt: nowTz }); } catch (_) {}
-    await SystemLog.create({
-      level: 'info',
-      module: 'decrypt',
-      action: 'daily_decrypt',
-      message: `解密任务完成: 日期=${date}, 用时=${durationMs}ms`,
-      details: { date, durationMs, result }
+    
+    // 记录任务完成
+    await SystemLogService.logSchedulerStatus('task_complete', '解密任务完成', {
+      taskType: 'decrypt',
+      date,
+      durationMs,
+      filesProcessed: result?.filesProcessed || 0,
+      successCount: result?.successCount || 0,
+      errorCount: result?.errorCount || 0
     });
+    
     return { success: true, date, result };
   } catch (error) {
     const durationMs = Date.now() - start;
-    await SystemLog.create({
-      level: 'error',
-      module: 'decrypt',
-      action: 'daily_decrypt',
-      message: `解密任务失败: 日期=${date}, 错误=${error.message}`,
-      details: { date, durationMs, error: error.message }
+    
+    // 记录任务失败
+    await SystemLogService.logSystemError('decrypt', 'task_failed', '解密任务失败', error, {
+      taskType: 'decrypt',
+      date,
+      durationMs
     });
+    
     return { success: false, date, error: error.message };
   }
 }

@@ -7,6 +7,7 @@ export const layoutTranslations = {
     fileDecrypt: '文件解密',
     sftpTransfer: 'SFTP传输',
     systemConfig: '系统配置',
+    systemLogs: '系统日志',
     about: '关于',
     
     // 用户菜单
@@ -34,6 +35,7 @@ export const layoutTranslations = {
     fileDecrypt: 'File Decrypt',
     sftpTransfer: 'SFTP Transfer',
     systemConfig: 'System Config',
+    systemLogs: 'System Logs',
     about: 'About',
     
     // User menu

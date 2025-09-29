@@ -6,6 +6,7 @@ const path = require('path');
 const config = require('./config');
 const mongoose = require('mongoose');
 const { registerAllJobs } = require('./jobs/registry');
+const { SystemLogService } = require('./modules/system');
 
 const app = express();
 const ENV = config.server.nodeEnv || process.env.NODE_ENV || 'development';
@@ -40,14 +41,42 @@ app.use('/api/decrypt', require('./modules/decrypt/routes'));
 app.use('/api/sftp', require('./modules/sftp/routes'));
 app.use('/api/schedule', require('./modules/schedule/routes'));
 app.use('/api/file-mapping', require('./modules/fileMapping/routes'));
+app.use('/api/system', require('./modules/system/routes'));
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    // 记录性能监控数据
+    const memUsage = process.memoryUsage();
+    await SystemLogService.logPerformance('system', 'health_check', '系统健康检查', {
+      uptime: process.uptime(),
+      memory: {
+        rss: Math.round(memUsage.rss / 1024 / 1024), // MB
+        heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024), // MB
+        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
+        external: Math.round(memUsage.external / 1024 / 1024) // MB
+      },
+      cpuUsage: process.cpuUsage(),
+      pid: process.pid
+    });
+
+    res.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: {
+        rss: Math.round(memUsage.rss / 1024 / 1024),
+        heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
 });
 
 // Configuration check endpoint
@@ -65,8 +94,18 @@ app.get('/api/config-check', (req, res) => {
 });
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use(async (err, req, res, next) => {
   console.error(err.stack);
+  
+  // 记录系统错误
+  await SystemLogService.logSystemError('api', 'request_error', 'API 请求错误', err, {
+    method: req.method,
+    url: req.originalUrl,
+    userAgent: req.get('User-Agent'),
+    ip: req.ip,
+    body: req.body
+  });
+  
   res.status(500).json({
     error: 'Something went wrong!',
     message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
@@ -85,6 +124,14 @@ app.use('*', (req, res) => {
 let server;
 async function start() {
   try {
+    // 记录系统启动
+    await SystemLogService.logSystemLifecycle('startup', '系统启动中', {
+      version: process.env.npm_package_version || '1.0.0',
+      port: PORT,
+      environment: ENV,
+      nodeVersion: process.version
+    });
+
     // 使用写死的 URI 与基础连接选项
     await mongoose.connect(config.database.uri, {
       maxPoolSize: config.database.options.maxPoolSize,
@@ -94,6 +141,12 @@ async function start() {
       serverSelectionTimeoutMS: config.database.options.serverSelectionTimeoutMS
     });
     console.log('✅ 已连接 MongoDB');
+    
+    // 记录数据库连接成功
+    await SystemLogService.logDatabaseStatus('connect', '数据库连接成功', {
+      host: config.database.uri.split('@')[1]?.split('/')[0] || 'localhost',
+      database: config.database.uri.split('/').pop() || 'acca'
+    });
 
     server = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
@@ -101,15 +154,37 @@ async function start() {
       console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
     });
 
+    // 记录系统启动完成
+    await SystemLogService.logSystemLifecycle('startup_complete', '系统启动完成', {
+      port: PORT,
+      environment: ENV,
+      uptime: process.uptime()
+    });
+
     // 注册基于 DB 配置的 jobs（只负责执行，配置存放在 schedule 模块）
     try {
       await registerAllJobs();
       console.log('⏲️  Jobs 已根据配置完成注册');
+      
+      // 记录任务注册成功
+      await SystemLogService.logSchedulerStatus('jobs_registered', '定时任务注册完成', {
+        registeredAt: new Date()
+      });
     } catch (e) {
       console.error('Jobs 注册失败:', e.message);
+      
+      // 记录任务注册失败
+      await SystemLogService.logSystemError('scheduler', 'jobs_registration_failed', '定时任务注册失败', e);
     }
   } catch (err) {
     console.error('❌ 连接 MongoDB 失败：', err);
+    
+    // 记录数据库连接失败
+    await SystemLogService.logDatabaseStatus('connect_failed', '数据库连接失败', {
+      error: err.message,
+      host: config.database.uri.split('@')[1]?.split('/')[0] || 'localhost'
+    });
+    
     process.exit(1);
   }
 }
@@ -122,13 +197,38 @@ module.exports = app;
 async function shutdown(signal) {
   try {
     console.log(`\n${signal} received. Shutting down...`);
+    
+    // 记录系统关闭
+    await SystemLogService.logSystemLifecycle('shutdown', '系统正在关闭', {
+      signal: signal,
+      uptime: process.uptime(),
+      reason: 'graceful_shutdown'
+    });
+    
     if (server && server.close) {
       await new Promise((resolve) => server.close(resolve));
     }
+    
+    // 记录数据库断开连接
+    await SystemLogService.logDatabaseStatus('disconnect', '数据库连接已断开', {
+      reason: 'system_shutdown'
+    });
+    
     try { await mongoose.disconnect(); } catch (_) {}
+    
+    // 记录系统关闭完成
+    await SystemLogService.logSystemLifecycle('shutdown_complete', '系统关闭完成', {
+      signal: signal,
+      totalUptime: process.uptime()
+    });
+    
     process.exit(0);
   } catch (e) {
     console.error('Error during shutdown:', e);
+    
+    // 记录关闭过程中的错误
+    await SystemLogService.logSystemError('system', 'shutdown_error', '系统关闭过程中发生错误', e);
+    
     process.exit(1);
   }
 }

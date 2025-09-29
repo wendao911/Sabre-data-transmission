@@ -4,6 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const decryptService = require('../services');
 
+// 引入日志路由
+router.use('/logs', require('./logs'));
+
 
 // 获取带解密状态的日期列表
 router.get('/encrypted-dates-with-status', (req, res) => {

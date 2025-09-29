@@ -7,7 +7,8 @@ import {
   CloudUploadOutlined,
   SettingOutlined,
   ControlOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { useLocation } from 'react-router-dom';
 import logo from '../../../assets/logo.png';
@@ -56,6 +57,11 @@ const Sidebar = ({ collapsed, onMenuClick, t }) => {
           label: t('fileMapping'),
         },
       ],
+    },
+    {
+      key: '/system-logs',
+      icon: <FileTextOutlined />,
+      label: t('systemLogs'),
     },
     {
       key: '/about',

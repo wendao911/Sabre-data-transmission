@@ -3,6 +3,8 @@ const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const config = require('../../../config');
+const { SystemLogService } = require('../../system');
+const { DecryptLog } = require('../models');
 
 const execAsync = promisify(exec);
 
@@ -285,8 +287,42 @@ async function batchProcessFiles(date, progressCallback = null) {
       });
     }
 
+    // 记录解密日志到数据库
+    try {
+      const logData = {
+        date,
+        status: results.failed === 0 ? 'success' : 'fail',
+        processedFiles: results.processed,
+        successFiles: results.decrypted + results.copied,
+        failedFiles: results.failed,
+        duration: 0, // 可以添加计时逻辑
+        message: results.failed === 0 
+          ? `成功处理 ${results.processed} 个文件，解密 ${results.decrypted} 个，复制 ${results.copied} 个`
+          : `处理完成，成功 ${results.decrypted + results.copied} 个，失败 ${results.failed} 个`
+      };
+      
+      await DecryptLog.create(logData);
+    } catch (logError) {
+      console.error('记录解密日志失败:', logError);
+    }
+
     return results;
   } catch (error) {
+    // 记录失败日志
+    try {
+      await DecryptLog.create({
+        date,
+        status: 'fail',
+        processedFiles: 0,
+        successFiles: 0,
+        failedFiles: 0,
+        duration: 0,
+        message: `解密任务失败: ${error.message}`
+      });
+    } catch (logError) {
+      console.error('记录失败日志失败:', logError);
+    }
+    
     throw error;
   }
 }

@@ -1,6 +1,7 @@
 const SFTPClient = require('ssh2-sftp-client');
 const fs = require('fs');
 const path = require('path');
+const { SystemLogService } = require('../../system');
 
 class SFTPService {
   constructor() {
@@ -41,10 +42,29 @@ class SFTPService {
         await this.client.cwd();
         this.isConnected = true;
         this.lastConnectionTime = new Date();
+        
+        // 记录 SFTP 连接成功
+        await SystemLogService.logSFTPStatus('connect', 'SFTP 连接成功', {
+          host: cfg.host,
+          port: cfg.port,
+          user: cfg.username,
+          attempt: attempt
+        });
+        
         return { success: true, message: 'SFTP连接成功' };
       } catch (err) {
         lastError = err;
         this.isConnected = false;
+        
+        // 记录 SFTP 连接失败
+        await SystemLogService.logSFTPStatus('connect_failed', 'SFTP 连接失败', {
+          host: cfg.host,
+          port: cfg.port,
+          user: cfg.username,
+          attempt: attempt,
+          error: err.message
+        });
+        
         if (attempt < 3) {
           await new Promise(r => setTimeout(r, attempt * 1000));
         }
@@ -59,9 +79,19 @@ class SFTPService {
         await this.client.end();
         this.isConnected = false;
         this.lastConnectionTime = null;
+        
+        // 记录 SFTP 断开连接
+        await SystemLogService.logSFTPStatus('disconnect', 'SFTP 连接已断开', {
+          reason: 'manual_disconnect'
+        });
       }
       return { success: true, message: 'SFTP连接已断开' };
     } catch (error) {
+      // 记录断开连接失败
+      await SystemLogService.logSFTPStatus('disconnect_failed', 'SFTP 断开连接失败', {
+        error: error.message
+      });
+      
       return { success: false, message: `断开连接失败: ${error.message}` };
     }
   }

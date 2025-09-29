@@ -7,6 +7,9 @@ const { syncByMapping } = require('../services/syncService');
 const path = require('path');
 const fs = require('fs');
 
+// 引入会话路由
+router.use('/sync/sessions', require('./sessions'));
+
 // 连接状态
 router.get('/status', (req, res) => {
   try {
