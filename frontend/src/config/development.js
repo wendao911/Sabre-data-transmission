@@ -2,7 +2,7 @@
 export const developmentConfig = {
   // API 配置
   api: {
-    baseURL: 'http://localhost:3000/api',
+    baseURL: 'http://172.24.176.1:3000/api',
     timeout: 10000,
     retryAttempts: 3,
     retryDelay: 1000,

@@ -142,6 +142,10 @@ class ConfigManager {
 
   // 获取 API 基础 URL
   getApiBaseUrl() {
+    // 仅通过环境变量覆盖（构建时注入），禁止使用缓存/本地存储
+    if (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_BASE_URL) {
+      return process.env.REACT_APP_API_BASE_URL;
+    }
     return this.get('api.baseURL', 'http://localhost:3000/api');
   }
 
