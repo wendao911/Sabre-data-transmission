@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Card, Tabs, Typography, Space, Button, DatePicker, Select, Input, Table, Tag, Tooltip, Badge, Modal, Descriptions, Divider, message } from 'antd';
 import { ReloadOutlined, SearchOutlined, DownloadOutlined, DeleteOutlined, InfoCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useLanguage } from './hooks/useLanguage';
@@ -33,6 +34,7 @@ const { Option } = Select;
 
 const SystemLogsPage = () => {
   const { t } = useLanguage();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('system');
   const [loading, setLoading] = useState(false);
   const [systemLogs, setSystemLogs] = useState([]);
@@ -841,6 +843,19 @@ const SystemLogsPage = () => {
   React.useEffect(() => {
     loadSystemLogs();
   }, []);
+
+  // 处理从首页跳转过来的activeTab参数
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+      // 根据activeTab加载对应数据
+      if (location.state.activeTab === 'transfer') {
+        loadTransferLogs();
+      } else if (location.state.activeTab === 'decrypt') {
+        loadDecryptLogs();
+      }
+    }
+  }, [location.state]);
 
   // 切换标签页
   const handleTabChange = (key) => {

@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { useLanguage, useTheme } from '../hooks/useLanguage';
 import { getSupportedLanguages } from '../../../utils/i18n';
+import TokenStatus from '../../TokenStatus';
 
 const { Header: AntHeader } = AntLayout;
 
@@ -67,6 +68,9 @@ const AppHeader = ({ collapsed, onToggleCollapse, user, onLogout, t }) => {
           onClick={toggleTheme}
           title={theme === 'light' ? t('dark') : t('light')}
         />
+        
+        {/* Token状态 */}
+        <TokenStatus />
         
         {/* 用户信息 */}
         <Space>

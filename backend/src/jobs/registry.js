@@ -62,4 +62,24 @@ async function reloadTask(taskType) {
 
 module.exports = { registerAllJobs, reloadTask };
 
+/**
+ * 返回当前已注册任务的运行时信息（taskType、nextRunAt）
+ */
+function getAllSchedules() {
+  const result = [];
+  for (const [taskType, job] of scheduled.entries()) {
+    let nextRunAt = null;
+    try {
+      const inv = job.nextInvocation && job.nextInvocation();
+      nextRunAt = inv ? (inv.toDate ? inv.toDate() : (inv.fireDate || null)) : null;
+    } catch (_) {
+      nextRunAt = null;
+    }
+    result.push({ taskType, nextRunAt });
+  }
+  return result;
+}
+
+module.exports.getAllSchedules = getAllSchedules;
+
 

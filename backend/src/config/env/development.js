@@ -29,7 +29,7 @@ module.exports = {
   },
   jwt: {
     secret: 'your_jwt_secret_key_here',
-    expiresIn: '7d'
+    expiresIn: '24h' // 24小时过期
   },
   cors: {
     // 允许前端开发站点来源

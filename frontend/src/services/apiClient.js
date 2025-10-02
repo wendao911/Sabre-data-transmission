@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getApiBaseUrl, getApiTimeout } from '../utils/config';
+import { tokenManager } from '../utils/tokenManager';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -16,8 +17,8 @@ class ApiClient {
     // Request interceptor to add auth token
     this.client.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem('auth_token');
-        if (token) {
+        const token = tokenManager.getToken();
+        if (token && !tokenManager.isExpired()) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
@@ -32,8 +33,8 @@ class ApiClient {
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          // Token expired or invalid - only redirect if not on login page
-          localStorage.removeItem('auth_token');
+          // Token expired or invalid - clear token and redirect if not on login page
+          tokenManager.clearToken();
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';
           }
