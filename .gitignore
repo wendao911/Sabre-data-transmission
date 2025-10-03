@@ -112,3 +112,7 @@ jspm_packages/
 
 # DynamoDB Local files
 .dynamodb/
+
+# Allow backend docs to be tracked
+!backend/docs/
+!backend/docs/**
