@@ -60,7 +60,10 @@ export const useFileManagementPage = () => {
   const handleFileAction = async (action, file) => {
     try {
       if (action === 'download') {
-        const blob = await fileService.downloadFile(file);
+        const filePath = typeof file === 'string'
+          ? file
+          : (file?.path || file?.fullPath || file?.name || file?.filePath || '');
+        const blob = await fileService.downloadFile(filePath);
         // 创建下载链接
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');

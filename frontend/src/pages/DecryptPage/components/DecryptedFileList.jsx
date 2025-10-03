@@ -7,6 +7,7 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons';
 import { decryptService } from '../services/decryptService';
+import fileService from '../../../services/fileService';
 import { useLanguage } from '../hooks/useLanguage';
 
 const DecryptedFileList = ({ selectedDate }) => {
@@ -110,21 +111,20 @@ const DecryptedFileList = ({ selectedDate }) => {
 
   const handleDownload = async (file) => {
     try {
-      const response = await fetch(`/api/files/download?path=${encodeURIComponent(file.filePath)}`);
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = file.filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        message.success(t('downloadSuccess'));
-      } else {
+      const blob = await fileService.downloadFile(file?.filePath || file?.path || file?.fullPath || '');
+      if (!blob) {
         message.error(t('downloadFailed'));
+        return;
       }
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.filename || file.name || 'download';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      message.success(t('downloadSuccess'));
     } catch (error) {
       console.error('下载文件失败:', error);
       message.error(t('downloadFailed'));

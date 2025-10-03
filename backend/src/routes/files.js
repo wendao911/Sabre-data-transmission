@@ -35,9 +35,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-router.get('/download', (req, res) => {
+// 支持 POST 下载，避免 URL 中 path 编码问题
+router.post('/download', (req, res) => {
   try {
-    const { path: filePath } = req.query;
+    const { path: filePath } = req.body || {};
     const { fullFilePath, fileName } = fileService.resolveDownloadPath(filePath);
     res.download(fullFilePath, fileName);
   } catch (e) {

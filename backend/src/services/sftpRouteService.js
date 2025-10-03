@@ -100,4 +100,66 @@ module.exports = {
   deleteDirectory
 };
 
+// ---- SFTP 配置 CRUD ----
+async function listConfigs() {
+  const configs = await SFTPConfig.find().sort({ updatedAt: -1 });
+  return configs;
+}
+
+async function getActiveConfig() {
+  const config = await SFTPConfig.findOne({ status: 1 });
+  return config;
+}
+
+async function createConfig(configData) {
+  const payload = { ...configData, protocol: 'sftp' };
+  if (payload.status === 1) {
+    await SFTPConfig.updateMany({}, { status: 0 });
+  }
+  const config = new SFTPConfig(payload);
+  await config.save();
+  return config;
+}
+
+async function updateConfig(id, configData) {
+  const payload = { ...configData, protocol: 'sftp' };
+  if (payload.status === 1) {
+    await SFTPConfig.updateMany({ _id: { $ne: id } }, { status: 0 });
+  }
+  const config = await SFTPConfig.findByIdAndUpdate(id, payload, { new: true });
+  return config;
+}
+
+async function deleteConfig(id) {
+  const config = await SFTPConfig.findByIdAndDelete(id);
+  return !!config;
+}
+
+async function activateConfig(id) {
+  await SFTPConfig.updateMany({}, { status: 0 });
+  const config = await SFTPConfig.findByIdAndUpdate(id, { status: 1 }, { new: true });
+  return config;
+}
+
+async function testConnection(configData) {
+  try {
+    const conn = await connect(configData);
+    if (conn?.success) {
+      await disconnect();
+      return { success: true, message: 'SFTP 连接测试成功' };
+    }
+    return conn || { success: false, message: 'SFTP 连接失败' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+module.exports.listConfigs = listConfigs;
+module.exports.getActiveConfig = getActiveConfig;
+module.exports.createConfig = createConfig;
+module.exports.updateConfig = updateConfig;
+module.exports.deleteConfig = deleteConfig;
+module.exports.activateConfig = activateConfig;
+module.exports.testConnection = testConnection;
+
 

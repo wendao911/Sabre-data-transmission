@@ -18,8 +18,7 @@ class SFTPService {
           try { await this.client.end(); } catch (_) {}
         }
         this.client = new SFTPClient();
-
-        const cfg = {
+        let cfg = {
           host: params.host,
           port: params.port || 22,
           username: params.user || params.username,
@@ -47,7 +46,9 @@ class SFTPService {
       } catch (err) {
         lastError = err;
         this.isConnected = false;
-        await SystemLogService.logSFTPStatus('connect_failed', 'SFTP 连接失败', { host: cfg?.host, port: cfg?.port, user: cfg?.username, attempt, error: err.message });
+        try {
+          await SystemLogService.logSFTPStatus('connect_failed', 'SFTP 连接失败', { host: params?.host, port: params?.port || 22, user: params?.user || params?.username, attempt, error: err.message });
+        } catch (_) {}
         if (attempt < 3) {
           await new Promise(r => setTimeout(r, attempt * 1000));
         }

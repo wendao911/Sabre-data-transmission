@@ -15,7 +15,7 @@
 ## API 摘要
 - GET `/api/files/browser`
 - POST `/api/files/upload` (multipart)
-- GET `/api/files/download`
+- POST `/api/files/download`
 - DELETE `/api/files/delete`
 - GET `/api/files/upload-logs`
 - GET `/api/files/upload-log/by-path`

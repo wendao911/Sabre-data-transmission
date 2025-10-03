@@ -50,9 +50,7 @@ export const fileService = {
 
   async downloadFile(filePath) {
     try {
-      const response = await apiClient.getClient().get(`/files/download?path=${encodeURIComponent(filePath)}`, {
-        responseType: 'blob',
-      });
+      const response = await apiClient.getClient().post(`/files/download`, { path: filePath }, { responseType: 'blob' });
       return response.data;
     } catch (error) {
       apiClient.handleError(error);

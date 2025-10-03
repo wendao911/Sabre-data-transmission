@@ -24,6 +24,22 @@ class SystemLogService {
     }
   }
 
+  // SFTP 状态日志（供 sftpService 使用）
+  static async logSFTPStatus(action, message, details = {}) {
+    try {
+      const level = action.includes('failed') || action.includes('error') ? 'error' : 'info';
+      return await SystemLog.create({
+        level,
+        module: 'sftp',
+        action,
+        message,
+        details: { ...details, timestamp: new Date() }
+      });
+    } catch (error) {
+      console.error('记录 SFTP 状态日志失败:', error);
+    }
+  }
+
   static async logSchedulerStatus(action, message, details = {}) {
     try {
       let level = 'info';

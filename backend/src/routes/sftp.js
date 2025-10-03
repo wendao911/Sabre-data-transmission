@@ -4,6 +4,42 @@ const svc = require('../services/sftpRouteService');
 
 router.use('/transfer-logs', require('./sftpTransferLogs'));
 
+// ---- SFTP 配置 CRUD ----
+router.get('/configs', async (req, res) => {
+  try { const data = await svc.listConfigs(); res.json({ success: true, data }); }
+  catch (error) { res.status(500).json({ success: false, message: error.message }); }
+});
+
+router.get('/configs/active', async (req, res) => {
+  try { const data = await svc.getActiveConfig(); res.json({ success: true, data }); }
+  catch (error) { res.status(500).json({ success: false, message: error.message }); }
+});
+
+router.post('/configs', async (req, res) => {
+  try { const data = await svc.createConfig(req.body || {}); res.json({ success: true, data, message: 'SFTP 配置创建成功' }); }
+  catch (error) { res.status(500).json({ success: false, message: error.message }); }
+});
+
+router.put('/configs/:id', async (req, res) => {
+  try { const data = await svc.updateConfig(req.params.id, req.body || {}); if (!data) return res.status(404).json({ success: false, message: 'SFTP 配置不存在' }); res.json({ success: true, data, message: 'SFTP 配置更新成功' }); }
+  catch (error) { res.status(500).json({ success: false, message: error.message }); }
+});
+
+router.delete('/configs/:id', async (req, res) => {
+  try { const ok = await svc.deleteConfig(req.params.id); if (!ok) return res.status(404).json({ success: false, message: 'SFTP 配置不存在' }); res.json({ success: true, message: 'SFTP 配置删除成功' }); }
+  catch (error) { res.status(500).json({ success: false, message: error.message }); }
+});
+
+router.post('/configs/:id/activate', async (req, res) => {
+  try { const data = await svc.activateConfig(req.params.id); if (!data) return res.status(404).json({ success: false, message: 'SFTP 配置不存在' }); res.json({ success: true, data, message: 'SFTP 配置已激活' }); }
+  catch (error) { res.status(500).json({ success: false, message: error.message }); }
+});
+
+router.post('/test-connection', async (req, res) => {
+  try { const data = await svc.testConnection(req.body || {}); res.status(data.success ? 200 : 500).json(data); }
+  catch (error) { res.status(500).json({ success: false, message: error.message }); }
+});
+
 router.get('/status', (req, res) => {
   try { return res.json({ success: true, data: svc.getStatus() }); }
   catch (error) { return res.status(500).json({ success: false, message: error.message }); }
