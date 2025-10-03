@@ -6,7 +6,7 @@ const path = require('path');
 const config = require('./config');
 const mongoose = require('mongoose');
 const { registerAllJobs } = require('./jobs/registry');
-const { SystemLogService } = require('./modules/system');
+const SystemLogService = require('./services/systemLogService');
 
 const app = express();
 const ENV = config.server.nodeEnv || process.env.NODE_ENV || 'development';
@@ -44,15 +44,15 @@ app.use(express.urlencoded({ extended: true, limit: jsonLimit }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
-app.use('/api/auth', require('./modules/auth/routes'));
-app.use('/api/users', require('./modules/users/routes'));
-app.use('/api/files', require('./modules/files/routes'));
-app.use('/api/decrypt', require('./modules/decrypt/routes'));
-app.use('/api/sftp', require('./modules/sftp/routes'));
-app.use('/api/schedule', require('./modules/schedule/routes'));
-app.use('/api/file-mapping', require('./modules/fileMapping/routes'));
-app.use('/api/system', require('./modules/system/routes'));
-app.use('/api/file-type-config', require('./modules/fileTypeConfig/routes'));
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/files', require('./routes/files'));
+app.use('/api/decrypt', require('./routes/decrypt'));
+app.use('/api/sftp', require('./routes/sftp'));
+app.use('/api/schedule', require('./routes/schedule'));
+app.use('/api/file-mapping', require('./routes/fileMapping'));
+app.use('/api/system', require('./routes/system'));
+app.use('/api/file-type-config', require('./routes/fileTypeConfig'));
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {

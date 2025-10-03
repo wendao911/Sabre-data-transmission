@@ -1,6 +1,6 @@
-# ACCA Backend API
+# ACCA Backend - 三层架构与统一响应规范
 
-基于 Node.js + Express 的后端服务，包含解密、SFTP 传输、文件浏览与定时任务配置等模块。
+基于 Node.js + Express 的后端服务。现已完成三层架构（routes/services/models）改造，并引入统一响应体与错误码约定。
 
 ## 功能特性
 
@@ -73,48 +73,70 @@ npm start
 
 服务将在 `http://localhost:3000` 启动
 
-## 模块与目录结构（做什么/属于哪个模块）
+## 模块与目录结构
 
 ```
 backend/
 └── src/
-    ├── server.js               # 应用入口：注册中间件/路由，启动后注册 jobs
-    ├── utils/
-    │   └── date.js             # 通用日期工具（格式化/变量替换/解析）
-    ├── jobs/                   #【Jobs 执行层】真正的定时任务执行入口
-    │   ├── decrypt/            #   解密 Job：按天运行，调用 decryptService.batchProcessFiles
-    │   ├── sftp/               #   SFTP 同步 Job：按天运行，调用 syncService.syncByMapping
-    │   ├── index.js            #   导出 { decrypt, sftp }
-    │   └── registry.js         #   基于 DB 的任务注册器，支持热更新（cron/enabled）
-    └── modules/                #【业务模块层】对外暴露路由、聚合模型/服务
-        ├── decrypt/            #   解密模块：routes + services（批量解密、目录准备、密钥选取）
-        ├── sftp/               #   SFTP 模块：routes + services（连接、目录、上传、syncByMapping）
-        ├── fileMapping/        #   文件映射规则：模型 + API（source/destination/schedule）
-        ├── schedule/           #   任务配置模块：仅存/改配置（cron/enabled/params），不负责执行
-        └── system/             #   SystemLog 模型：统一写入系统级运行日志
+    ├── server.js               # 应用入口：中间件/路由注册、启动后注册 jobs
+    ├── utils/                  # 工具（与业务弱相关）
+    │   └── date.js
+    ├── jobs/                   # 定时任务执行与注册
+    │   ├── decrypt/
+    │   ├── sftp/
+    │   └── registry.js
+    ├── models/                 # 数据模型（Mongoose）
+    ├── services/               # 业务逻辑（不依赖 Express）
+    └── routes/                 # 路由，仅做参数解析与调用 services
 ```
 
-### 模块职责说明
+### 模块职责说明（要点）
 - `utils/date`（工具模块）
   - 统一日期处理：格式化（YYYYMMDD/YYYY-MM-DD）、解析字符串、替换规则中的日期变量
 
-- `modules/decrypt`（解密模块）
-  - 提供解密服务 `batchProcessFiles(date)`，读取加密目录，按日期解密到输出目录
-  - 路由仅用于手动操作/页面查看；批量定时执行由 jobs/decrypt 负责
+- decrypt（`services/decryptService.js`）
+  - `batchProcessFiles(date)`：批量解密；`getEncryptedFilesByDate`、`listDecryptedFiles` 查询
 
-- `modules/sftp`（SFTP 模块）
-  - 基础 SFTP 操作（连接/断开/列目录/上传/下载/删除）
-  - 同步服务 `syncService.syncByMapping(dateStr)`：按映射规则在日期上下文完成文件同步
+- sftp（`services/sftpService.js`、`services/syncService.js`、`services/sftpRouteService.js`）
+  - 基础 SFTP 操作/映射同步/路由编排下沉
 
-- `modules/fileMapping`（文件映射规则）
+- fileMapping（文件映射规则）
   - 定义 `file_mapping_rules`，字段含 `source/destination/schedule/module/priority/enabled`
   - 被 `syncService` 消费以决定当天需要同步的源文件与目标命名/路径
 
-- `modules/schedule`（任务配置模块）
+- schedule（任务配置）
   - 仅存储配置（`config_schedule`：taskType/cron/enabled/params/lastRunAt/nextRunAt）
   - 保存配置后由 `jobs/registry.reloadTask(taskType)` 热更新定时器
 
-- `modules/system`（系统模块）
+- system（系统日志）
+
+## 统一响应体与错误码
+
+所有 API 返回统一结构：
+
+```
+{
+  success: true|false,
+  data?: any,
+  message?: string,
+  code?: string,
+  error?: string,
+  details?: object,
+  pagination?: { current, pageSize, total, pages }
+}
+```
+
+错误码建议：
+
+- 通用：`OK`、`VALIDATION_ERROR`、`NOT_FOUND`、`INTERNAL_ERROR`
+- auth：`AUTH_INVALID_CREDENTIALS`、`AUTH_TOKEN_MISSING`、`AUTH_TOKEN_INVALID`
+- files：`FILES_PATH_OUT_OF_ROOT`、`FILES_PATH_NOT_FOUND`、`FILES_NOT_A_FILE`、`FILES_UPLOAD_FAILED`
+- decrypt：`DECRYPT_INVALID_DATE`、`DECRYPT_KEY_MISSING`、`DECRYPT_EXEC_FAILED`
+- fileTypeConfig：`FTC_SERIAL_EXISTS`、`FTC_CONFIG_NOT_FOUND`
+- sftp：`SFTP_NOT_CONNECTED`、`SFTP_CONNECT_FAILED`、`SFTP_UPLOAD_FAILED`、`SFTP_DOWNLOAD_FAILED`
+- schedule：`SCHEDULE_INVALID_PARAMS`、`SCHEDULE_UNSUPPORTED_TASK`
+
+路由处理建议：将服务层抛出的错误映射为上述 `code` 与合适 HTTP 状态码（400/401/404/409/500）。
   - `SystemLog` 统一记录 Job 运行日志（成功/失败/统计数据/耗时）
 
 - `jobs/decrypt`（Job 执行模块：解密）

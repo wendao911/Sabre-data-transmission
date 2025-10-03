@@ -1,5 +1,5 @@
 const schedule = require('node-schedule');
-const { ScheduleConfig } = require('../modules/schedule/models');
+const { ScheduleConfig } = require('../models/ScheduleConfig');
 const jobs = require('./index');
 
 // 保存已注册的任务，便于后续更新/取消

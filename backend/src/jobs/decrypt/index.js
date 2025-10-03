@@ -1,8 +1,8 @@
 const schedule = require('node-schedule');
-const { batchProcessFiles } = require('../../modules/decrypt/services/decryptService');
-const { SystemLog } = require('../../modules/system/models/SystemLog');
-const { SystemLogService } = require('../../modules/system');
-const { ScheduleConfig } = require('../../modules/schedule/models');
+const { batchProcessFiles } = require('../../services/decryptService');
+const { SystemLog } = require('../../models/SystemLog');
+const SystemLogService = require('../../services/systemLogService');
+const { ScheduleConfig } = require('../../models/ScheduleConfig');
 const { formatDate } = require('../../utils/date');
 
 /**

@@ -6,7 +6,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const config = require('../config');
-const { User } = require('../modules/auth/models');
+const { User } = require('../models/User');
 
 async function connectMongo() {
   const uri = config.database.uri;

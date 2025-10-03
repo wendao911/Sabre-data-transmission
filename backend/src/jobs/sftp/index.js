@@ -1,10 +1,10 @@
 const schedule = require('node-schedule');
-const { SystemLog } = require('../../modules/system/models/SystemLog');
-const { ScheduleConfig } = require('../../modules/schedule/models');
-const { SFTPConfig } = require('../../modules/sftp/models');
-const sftpService = require('../../modules/sftp/services/sftpService');
+const { SystemLog } = require('../../models/SystemLog');
+const { ScheduleConfig } = require('../../models/ScheduleConfig');
+const { SFTPConfig } = require('../../models/SFTPConfig');
+const sftpService = require('../../services/sftpService');
 const { formatDate } = require('../../utils/date');
-const { syncByMapping } = require('../../modules/sftp/services/syncService');
+const { syncByMapping } = require('../../services/syncService');
 
 /**
  * 运行 SFTP 传输任务
