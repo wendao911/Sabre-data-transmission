@@ -14,6 +14,9 @@ Sabre Data Decryption/
 Sabre Data Encryption/
 Sabre Data Decryption.zip
 
+# SFTP test directory
+sftp_test/
+
 # Keys and passwords
 *.asc
 *.key
