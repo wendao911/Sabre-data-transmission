@@ -30,6 +30,9 @@ const TransferLogDetailsModal = ({ visible, onClose, sessionData }) => {
 
   if (!sessionData) return null;
 
+  // 适配新的日志模型数据结构
+  const taskData = sessionData;
+
   // 获取状态颜色
   const getStatusColor = (status) => {
     switch (status) {
@@ -72,9 +75,20 @@ const TransferLogDetailsModal = ({ visible, onClose, sessionData }) => {
       dataIndex: 'periodType',
       key: 'periodType',
       width: 100,
-      render: (type) => (
-        <Tag color="blue">{type}</Tag>
-      )
+      render: (type) => {
+        const getPeriodTypeText = (periodType) => {
+          switch (periodType) {
+            case 'daily': return t('periodDaily');
+            case 'weekly': return t('periodWeekly');
+            case 'monthly': return t('periodMonthly');
+            case 'adhoc': return t('periodAdhoc');
+            default: return periodType || t('periodAdhoc');
+          }
+        };
+        return (
+          <Tag color="blue">{getPeriodTypeText(type)}</Tag>
+        );
+      }
     },
     {
       title: t('totalFiles'),
@@ -170,8 +184,8 @@ const TransferLogDetailsModal = ({ visible, onClose, sessionData }) => {
     }
   ];
 
-  // 获取所有失败文件
-  const allFailedFiles = sessionData.ruleResults?.flatMap(rule => 
+  // 获取所有失败文件（从规则结果中获取）
+  const allFailedFiles = taskData.ruleResults?.flatMap(rule => 
     rule.failedFilesDetails?.map(file => ({
       ...file,
       ruleName: rule.ruleName,
@@ -189,21 +203,21 @@ const TransferLogDetailsModal = ({ visible, onClose, sessionData }) => {
       className="transfer-log-details-modal"
     >
       <div className="space-y-4">
-        {/* 会话概览 */}
-        <Card title={t('sessionOverview')} size="small">
+        {/* 任务概览 */}
+        <Card title={t('taskOverview')} size="small">
           <Descriptions bordered column={2} size="small">
-            <Descriptions.Item label={t('colSyncDate')}>
-              {formatDate(sessionData.syncDate, 'YYYY-MM-DD')}
+            <Descriptions.Item label={t('colTaskDate')}>
+              {formatDate(taskData.taskDate, 'YYYY-MM-DD')}
             </Descriptions.Item>
             <Descriptions.Item label={t('colDuration')}>
-              {Math.round(sessionData.duration / 1000)}s
+              {taskData.duration ? Math.round(taskData.duration / 1000) : 0}s
             </Descriptions.Item>
             <Descriptions.Item label={t('colTotalFiles')}>
-              {sessionData.totalFiles}
+              {taskData.totalFiles || 0}
             </Descriptions.Item>
             <Descriptions.Item label={t('colStatus')}>
-              <Tag color={getStatusColor(sessionData.status)} icon={getStatusIcon(sessionData.status)}>
-                {t(`status_${sessionData.status}`)}
+              <Tag color={getStatusColor(taskData.status)} icon={getStatusIcon(taskData.status)}>
+                {t(`status_${taskData.status}`)}
               </Tag>
             </Descriptions.Item>
           </Descriptions>
@@ -215,7 +229,7 @@ const TransferLogDetailsModal = ({ visible, onClose, sessionData }) => {
             <Col span={6}>
               <Statistic
                 title={t('colSynced')}
-                value={sessionData.syncedFiles}
+                value={taskData.successCount || 0}
                 valueStyle={{ color: '#52c41a' }}
                 prefix={<CheckCircleOutlined />}
               />
@@ -223,7 +237,7 @@ const TransferLogDetailsModal = ({ visible, onClose, sessionData }) => {
             <Col span={6}>
               <Statistic
                 title={t('colSkipped')}
-                value={sessionData.skippedFiles}
+                value={taskData.skippedCount || 0}
                 valueStyle={{ color: '#fa8c16' }}
                 prefix={<ExclamationCircleOutlined />}
               />
@@ -231,7 +245,7 @@ const TransferLogDetailsModal = ({ visible, onClose, sessionData }) => {
             <Col span={6}>
               <Statistic
                 title={t('colFailed')}
-                value={sessionData.failedFiles}
+                value={taskData.failedCount || 0}
                 valueStyle={{ color: '#ff4d4f' }}
                 prefix={<CloseCircleOutlined />}
               />
@@ -239,8 +253,8 @@ const TransferLogDetailsModal = ({ visible, onClose, sessionData }) => {
             <Col span={6}>
               <Statistic
                 title={t('successRate')}
-                value={`${sessionData.totalFiles > 0 ? Math.round((sessionData.syncedFiles / sessionData.totalFiles) * 100) : 0}%`}
-                valueStyle={{ color: sessionData.totalFiles > 0 && (sessionData.syncedFiles / sessionData.totalFiles) >= 0.8 ? '#52c41a' : '#fa8c16' }}
+                value={`${taskData.totalFiles > 0 ? Math.round(((taskData.successCount || 0) / taskData.totalFiles) * 100) : 0}%`}
+                valueStyle={{ color: taskData.totalFiles > 0 && ((taskData.successCount || 0) / taskData.totalFiles) >= 0.8 ? '#52c41a' : '#fa8c16' }}
               />
             </Col>
           </Row>
@@ -250,7 +264,7 @@ const TransferLogDetailsModal = ({ visible, onClose, sessionData }) => {
         <Card title={t('ruleResults')} size="small">
           <Table
             columns={ruleResultColumns}
-            dataSource={sessionData.ruleResults || []}
+            dataSource={taskData.ruleResults || []}
             pagination={false}
             size="small"
             scroll={{ x: 800 }}
@@ -276,21 +290,26 @@ const TransferLogDetailsModal = ({ visible, onClose, sessionData }) => {
           </Card>
         )}
 
-        {/* 会话详情 */}
-        <Card title={t('sessionDetails')} size="small">
+        {/* 任务详情 */}
+        <Card title={t('taskDetails')} size="small">
           <Descriptions column={2} size="small">
             <Descriptions.Item label={t('startTime')}>
-              {formatDate(sessionData.startTime, 'YYYY-MM-DD HH:mm:ss')}
+              {formatDate(taskData.startTime, 'YYYY-MM-DD HH:mm:ss')}
             </Descriptions.Item>
             <Descriptions.Item label={t('endTime')}>
-              {formatDate(sessionData.endTime, 'YYYY-MM-DD HH:mm:ss')}
+              {formatDate(taskData.endTime, 'YYYY-MM-DD HH:mm:ss')}
             </Descriptions.Item>
             <Descriptions.Item label={t('totalRules')}>
-              {sessionData.totalRules}
+              {taskData.totalRules || 0}
             </Descriptions.Item>
             <Descriptions.Item label={t('createdAt')}>
-              {formatDate(sessionData.createdAt, 'YYYY-MM-DD HH:mm:ss')}
+              {formatDate(taskData.createdAt, 'YYYY-MM-DD HH:mm:ss')}
             </Descriptions.Item>
+            {taskData.errorMessage && (
+              <Descriptions.Item label={t('errorMessage')} span={2}>
+                <Text type="danger">{taskData.errorMessage}</Text>
+              </Descriptions.Item>
+            )}
           </Descriptions>
         </Card>
       </div>

@@ -37,10 +37,10 @@ export const scheduleService = {
 export const transferLogService = {
   async listRecent(limit = 5) {
     try {
-      const { data } = await client.get('/sftp/sync/sessions', {
+      const { data } = await client.get('/sftp/transfer-logs/tasks', {
         params: { page: 1, pageSize: limit, sortBy: 'createdAt', sortOrder: -1 }
       });
-      if (data?.success) return data.data?.logs || [];
+      if (data?.success) return data.data?.tasks || [];
       throw new Error(data?.error || 'Failed to fetch recent transfer logs');
     } catch (e) {
       throw apiClient.handleError(e);

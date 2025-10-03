@@ -4,11 +4,12 @@ const sftpService = require('../services/sftpService');
 const { logTransferDayResult } = require('../../files/services/transferLogService');
 const { SFTPConfig } = require('../models');
 const { syncByMapping } = require('../services/syncService');
+const TransferLogFile = require('../models/TransferLogFile');
 const path = require('path');
 const fs = require('fs');
 
-// 引入会话路由
-router.use('/sync/sessions', require('./sessions'));
+// 引入传输日志路由
+router.use('/transfer-logs', require('./transferLogs'));
 
 // 连接状态
 router.get('/status', (req, res) => {
@@ -92,7 +93,7 @@ router.post('/upload', async (req, res) => {
   try {
     const path = require('path');
     const config = require('../../../config');
-    const { localPath, remotePath } = req.body;
+    const { localPath, remotePath, fileId } = req.body;
 
     // 计算服务器本地文件的绝对路径（如果传的是相对路径，则基于文件浏览器根目录）
     let resolvedLocalPath = localPath;
@@ -101,12 +102,65 @@ router.post('/upload', async (req, res) => {
       resolvedLocalPath = path.resolve(rootPath, resolvedLocalPath);
     }
 
-    const result = await sftpService.uploadFile(resolvedLocalPath || localPath, remotePath);
+    const finalLocalPath = resolvedLocalPath || localPath;
+    const fileName = path.basename(finalLocalPath);
+    let fileSize = 0;
+    
+    // 获取文件大小
+    try {
+      const stats = fs.statSync(finalLocalPath);
+      fileSize = stats.size;
+    } catch (statError) {
+      console.warn('无法获取文件大小:', statError.message);
+    }
+
+    const result = await sftpService.uploadFile(finalLocalPath, remotePath);
+    
+    // 记录文件传输日志
+    try {
+      const fileLog = new TransferLogFile({
+        taskLogId: null, // 手动上传没有任务日志
+        ruleLogId: null, // 手动上传没有规则日志
+        fileName: fileName,
+        fileId: fileId || null,
+        localPath: finalLocalPath,
+        remotePath: remotePath,
+        fileSize: fileSize,
+        status: result?.success ? 'success' : 'fail',
+        errorMessage: result?.success ? null : (result?.message || '上传失败'),
+        transferTime: new Date()
+      });
+      await fileLog.save();
+    } catch (logError) {
+      console.error('记录文件传输日志失败:', logError);
+      // 不影响主要功能，只记录错误
+    }
+    
     if (!result?.success) {
       return res.status(500).json(result || { success: false, message: '文件上传失败' });
     }
     res.json(result);
   } catch (error) {
+    // 记录失败的文件传输日志
+    try {
+      const fileName = path.basename(req.body.localPath || 'unknown');
+      const fileLog = new TransferLogFile({
+        taskLogId: null,
+        ruleLogId: null,
+        fileName: fileName,
+        fileId: req.body.fileId || null,
+        localPath: req.body.localPath || 'unknown',
+        remotePath: req.body.remotePath || 'unknown',
+        fileSize: 0,
+        status: 'fail',
+        errorMessage: error.message,
+        transferTime: new Date()
+      });
+      await fileLog.save();
+    } catch (logError) {
+      console.error('记录失败文件传输日志失败:', logError);
+    }
+    
     res.status(500).json({ success: false, message: error.message });
   }
 });

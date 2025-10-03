@@ -57,30 +57,70 @@ class SystemLogsService {
   }
 
   /**
-   * 获取传输日志
+   * 获取传输任务日志
    */
-  async getTransferLogs(params = {}) {
+  async getTransferTaskLogs(params = {}) {
     try {
-      const response = await apiClient.getClient().get('/sftp/sync/sessions', { params });
+      const response = await apiClient.getClient().get('/sftp/transfer-logs/tasks', { params });
       return response.data;
     } catch (error) {
-      console.error('获取传输日志失败:', error);
+      console.error('获取传输任务日志失败:', error);
       throw error;
     }
   }
 
   /**
-   * 获取传输日志详情
+   * 获取传输任务详情
    */
-  async getTransferLogDetails(sessionId) {
+  async getTransferTaskDetails(taskId) {
     try {
-      const response = await apiClient.getClient().get(`/sftp/sync/sessions/${sessionId}`);
+      const response = await apiClient.getClient().get(`/sftp/transfer-logs/tasks/${taskId}`);
       return response.data;
     } catch (error) {
-      console.error('获取传输日志详情失败:', error);
+      console.error('获取传输任务详情失败:', error);
       throw error;
     }
   }
+
+  /**
+   * 获取传输规则日志
+   */
+  async getTransferRuleLogs(params = {}) {
+    try {
+      const response = await apiClient.getClient().get('/sftp/transfer-logs/rules', { params });
+      return response.data;
+    } catch (error) {
+      console.error('获取传输规则日志失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取传输文件日志
+   */
+  async getTransferFileLogs(params = {}) {
+    try {
+      const response = await apiClient.getClient().get('/sftp/transfer-logs/files', { params });
+      return response.data;
+    } catch (error) {
+      console.error('获取传输文件日志失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取传输统计信息
+   */
+  async getTransferStats(params = {}) {
+    try {
+      const response = await apiClient.getClient().get('/sftp/transfer-logs/stats', { params });
+      return response.data;
+    } catch (error) {
+      console.error('获取传输统计信息失败:', error);
+      throw error;
+    }
+  }
+
 
   /**
    * 导出日志

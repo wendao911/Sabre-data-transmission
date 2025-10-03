@@ -188,13 +188,13 @@ const SystemLogsPage = () => {
         params.endDate = formatDate(currentFilters.endDate, 'YYYY-MM-DD');
       }
       
-      const response = await systemLogsService.getTransferLogs(params);
+      const response = await systemLogsService.getTransferTaskLogs(params);
       if (response.success) {
-        setTransferLogs(response.data.logs);
+        setTransferLogs(response.data.tasks || []);
         setPagination(prev => ({
           ...prev,
           current: page,
-          total: response.data.pagination.total
+          total: response.data.pagination?.total || 0
         }));
       } else {
         message.error(response.error || '加载传输日志失败');
@@ -755,9 +755,9 @@ const SystemLogsPage = () => {
   // 传输日志列定义
   const transferLogColumns = [
     {
-      title: t('colSyncDate'),
-      dataIndex: 'syncDate',
-      key: 'syncDate',
+      title: t('colTaskDate'),
+      dataIndex: 'taskDate',
+      key: 'taskDate',
       width: 120,
       render: (date) => formatDate(date, 'YYYY-MM-DD')
     },
@@ -766,7 +766,13 @@ const SystemLogsPage = () => {
       dataIndex: 'duration',
       key: 'duration',
       width: 80,
-      render: (duration) => `${Math.round(duration / 1000)}s`
+      render: (duration) => duration ? `${Math.round(duration / 1000)}s` : '-'
+    },
+    {
+      title: t('colTotalRules'),
+      dataIndex: 'totalRules',
+      key: 'totalRules',
+      width: 80
     },
     {
       title: t('colTotalFiles'),
@@ -775,23 +781,23 @@ const SystemLogsPage = () => {
       width: 80
     },
     {
-      title: t('colSynced'),
-      dataIndex: 'syncedFiles',
-      key: 'syncedFiles',
+      title: t('colSuccess'),
+      dataIndex: 'successCount',
+      key: 'successCount',
       width: 80,
       render: (count) => <Tag color="green">{count}</Tag>
     },
     {
       title: t('colSkipped'),
-      dataIndex: 'skippedFiles',
-      key: 'skippedFiles',
+      dataIndex: 'skippedCount',
+      key: 'skippedCount',
       width: 80,
       render: (count) => <Tag color="orange">{count}</Tag>
     },
     {
       title: t('colFailed'),
-      dataIndex: 'failedFiles',
-      key: 'failedFiles',
+      dataIndex: 'failedCount',
+      key: 'failedCount',
       width: 80,
       render: (count) => <Tag color="red">{count}</Tag>
     },
@@ -823,9 +829,34 @@ const SystemLogsPage = () => {
   // 查看传输日志详情
   const handleViewDetails = async (record) => {
     try {
-      const response = await systemLogsService.getTransferLogDetails(record._id);
+      const response = await systemLogsService.getTransferTaskDetails(record._id);
       if (response.success) {
-        setSelectedSession(response.data);
+        // 后端返回的数据结构是 { task, rules, files }
+        // 需要将规则数据转换为前端期望的格式
+        const taskData = response.data.task;
+        const rules = response.data.rules || [];
+        
+        // 转换规则数据格式以匹配前端期望
+        const ruleResults = rules.map(rule => ({
+          ruleId: rule.ruleId?._id || rule.ruleId,
+          ruleName: rule.ruleName || rule.ruleId?.name || '未命名规则',
+          module: rule.module || rule.ruleId?.module || 'unknown',
+          periodType: rule.ruleId?.schedule?.period || 'adhoc',
+          totalFiles: rule.totalFiles || 0,
+          syncedFiles: rule.successCount || 0,
+          skippedFiles: rule.skippedCount || 0,
+          failedFiles: rule.failedCount || 0,
+          status: rule.status || 'unknown',
+          message: rule.message || ''
+        }));
+        
+        // 合并任务数据和规则结果
+        const sessionData = {
+          ...taskData,
+          ruleResults: ruleResults
+        };
+        
+        setSelectedSession(sessionData);
         setDetailsModalVisible(true);
       }
     } catch (error) {
