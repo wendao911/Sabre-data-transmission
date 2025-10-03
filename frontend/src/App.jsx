@@ -15,6 +15,7 @@ import SFTPTransferPage from './pages/SFTPTransferPage';
 import SFTPConnectionConfigPage from './pages/SFTPConnectionConfigPage';
 import ScheduledTaskConfigPage from './pages/ScheduledTaskConfigPage';
 import FileMappingConfigPage from './pages/FileMappingConfigPage';
+import FileTypeConfigPage from './pages/FileTypeConfigPage';
 import SystemLogsPage from './pages/SystemLogsPage';
 import AboutPage from './pages/AboutPage';
 import DecryptPage from './pages/DecryptPage';
@@ -80,6 +81,7 @@ function AppContent() {
                   <Route path="/system-config/sftp-connection" element={<SFTPConnectionConfigPage />} />
                   <Route path="/system-config/scheduled-task" element={<ScheduledTaskConfigPage />} />
                   <Route path="/system-config/file-mapping" element={<FileMappingConfigPage />} />
+                  <Route path="/system-config/file-type" element={<FileTypeConfigPage />} />
                   <Route path="/system-logs" element={<SystemLogsPage />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />

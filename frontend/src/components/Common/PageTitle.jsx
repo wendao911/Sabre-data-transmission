@@ -7,6 +7,7 @@ const PageTitle = ({
   title, 
   subtitle, 
   icon,
+  extra,
   className = ""
 }) => {
   return (

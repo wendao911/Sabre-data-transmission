@@ -47,6 +47,24 @@
   background: #f5f5f5;
 }
 
+/* ModernTable 样式 */
+.modern-table .ant-table-thead > tr > th {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+  padding: 16px 12px;
+}
+
+.modern-table .ant-table-tbody > tr > td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.modern-table .ant-table-tbody > tr:hover > td {
+  background: #f8f9fa;
+}
+
 .ant-layout-sider {
   background: #fff;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);

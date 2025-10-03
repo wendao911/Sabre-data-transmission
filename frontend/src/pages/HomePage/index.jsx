@@ -4,12 +4,14 @@ import { DashboardOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircl
 import { PageTitle, PageContainer } from '../../components/Common';
 import { scheduleService, transferLogService } from './services/scheduleService';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from './hooks/useLanguage';
 
 
 const POLL_MS = 15000;
 const { Text } = Typography;
 
 const HomePage = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [configs, setConfigs] = useState([]);
   const [runtime, setRuntime] = useState([]);
@@ -29,7 +31,7 @@ const HomePage = () => {
       setRuntime(rt || []);
       setRecentLogs(logs || []);
     } catch (e) {
-      message.error(e.message || '加载定时任务失败');
+      message.error(e.message || t('messageLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -60,9 +62,9 @@ const HomePage = () => {
     try {
       setRunning(prev => ({ ...prev, [taskType]: true }));
       await scheduleService.run(taskType);
-      message.success('已触发任务运行');
+      message.success(t('messageTaskTriggered'));
     } catch (e) {
-      message.error(e.message || '触发失败');
+      message.error(e.message || t('messageTriggerFailed'));
     } finally {
       setRunning(prev => ({ ...prev, [taskType]: false }));
       load();
@@ -74,30 +76,30 @@ const HomePage = () => {
   };
 
   const columns = [
-    { title: '任务类型', dataIndex: 'taskType', key: 'taskType', width: 140,
+    { title: t('taskType'), dataIndex: 'taskType', key: 'taskType', width: 140,
       render: (v) => {
-        const text = v === 'decrypt' ? '文件解密' : v === 'transfer' ? 'SFTP传输' : v;
+        const text = v === 'decrypt' ? t('taskTypeDecrypt') : v === 'transfer' ? t('taskTypeTransfer') : v;
         return <Tag color={v === 'decrypt' ? 'geekblue' : 'purple'}>{text}</Tag>;
       }
     },
-    { title: 'Cron 表达式', dataIndex: 'cron', key: 'cron', width: 180 },
-    { title: '启用', dataIndex: 'enabled', key: 'enabled', width: 100,
-      render: (v) => v ? <Tag icon={<CheckCircleOutlined />} color="success">启用</Tag> : <Tag icon={<CloseCircleOutlined />} color="default">停用</Tag>
+    { title: t('cronExpression'), dataIndex: 'cron', key: 'cron', width: 180 },
+    { title: t('enabled'), dataIndex: 'enabled', key: 'enabled', width: 100,
+      render: (v) => v ? <Tag icon={<CheckCircleOutlined />} color="success">{t('enabled')}</Tag> : <Tag icon={<CloseCircleOutlined />} color="default">{t('disabled')}</Tag>
     },
-    { title: '下次运行时间', dataIndex: 'nextRunAt', key: 'nextRunAt', width: 220,
+    { title: t('nextRunTime'), dataIndex: 'nextRunAt', key: 'nextRunAt', width: 220,
       render: (v) => v ? <Space><ClockCircleOutlined />{v.toLocaleString()}</Space> : '-'
     },
-    { title: '最近更新时间', dataIndex: 'updatedAt', key: 'updatedAt', width: 220,
+    { title: t('lastUpdateTime'), dataIndex: 'updatedAt', key: 'updatedAt', width: 220,
       render: (v) => v ? v.toLocaleString() : '-'
     },
-    { title: '操作', key: 'actions', fixed: 'right', width: 160,
+    { title: t('actions'), key: 'actions', fixed: 'right', width: 160,
       render: (_, row) => (
         <Space>
-          <Tooltip title="立即运行">
-            <Button type="primary" size="small" icon={running[row.taskType] ? <SyncOutlined spin /> : <ThunderboltOutlined />} onClick={() => runNow(row.taskType)} disabled={!row.enabled || running[row.taskType]}>运行</Button>
+          <Tooltip title={t('runNow')}>
+            <Button type="primary" size="small" icon={running[row.taskType] ? <SyncOutlined spin /> : <ThunderboltOutlined />} onClick={() => runNow(row.taskType)} disabled={!row.enabled || running[row.taskType]}>{running[row.taskType] ? t('running') : t('run')}</Button>
           </Tooltip>
-          <Tooltip title="刷新状态">
-            <Button size="small" onClick={load}>刷新</Button>
+          <Tooltip title={t('refresh')}>
+            <Button size="small" onClick={load}>{t('refresh')}</Button>
           </Tooltip>
         </Space>
       )
@@ -107,14 +109,14 @@ const HomePage = () => {
   return (
     <PageContainer>
       <PageTitle
-        title="仪表盘"
-        subtitle="系统概览和快速操作"
+        title={t('pageTitle')}
+        subtitle={t('pageSubtitle')}
         icon={<DashboardOutlined />}
       />
 
       <Row gutter={16}>
         <Col span={24}>
-          <Card title="定时任务状态" extra={<Button size="small" onClick={load} icon={<SyncOutlined />}>刷新</Button>}>
+          <Card title={t('scheduledTasks')} extra={<Button size="small" onClick={load} icon={<SyncOutlined />}>{t('refresh')}</Button>}>
             <Table
               loading={loading}
               dataSource={rows}
@@ -130,14 +132,14 @@ const HomePage = () => {
       <Row gutter={16} style={{ marginTop: 16 }}>
         <Col span={24}>
           <Card 
-            title="文件传输日志" 
+            title={t('transferLogs')} 
             extra={
               <Button 
                 size="small" 
                 icon={<EyeOutlined />} 
                 onClick={viewTransferDetails}
               >
-                查看详情
+                {t('viewDetails')}
               </Button>
             }
           >
@@ -148,10 +150,10 @@ const HomePage = () => {
                   const succ = (log.syncedFiles || 0);
                   const rate = total > 0 ? Math.round((succ / total) * 100) : 0;
                   const statusMap = { 
-                    success: { color: 'success', text: '成功' }, 
-                    partial: { color: 'processing', text: '部分成功' }, 
-                    failed: { color: 'error', text: '失败' }, 
-                    skipped: { color: 'default', text: '跳过' } 
+                    success: { color: 'success', text: t('statusSuccess') }, 
+                    partial: { color: 'processing', text: t('statusPartial') }, 
+                    failed: { color: 'error', text: t('statusFailed') }, 
+                    skipped: { color: 'default', text: t('statusSkipped') } 
                   };
                   const status = statusMap[log.status] || { color: 'default', text: log.status };
                   
@@ -161,13 +163,13 @@ const HomePage = () => {
                         <Row gutter={8}>
                           <Col span={12}>
                             <div style={{ marginBottom: 8 }}>
-                              <Text type="secondary" style={{ fontSize: 12 }}>时间</Text>
+                              <Text type="secondary" style={{ fontSize: 12 }}>{t('time')}</Text>
                               <div style={{ fontSize: 14, fontWeight: 500 }}>
                                 {log.createdAt ? new Date(log.createdAt).toLocaleString() : '-'}
                               </div>
                             </div>
                             <div style={{ marginBottom: 8 }}>
-                              <Text type="secondary" style={{ fontSize: 12 }}>状态</Text>
+                              <Text type="secondary" style={{ fontSize: 12 }}>{t('status')}</Text>
                               <div>
                                 <Tag color={status.color} size="small">{status.text}</Tag>
                               </div>
@@ -175,16 +177,16 @@ const HomePage = () => {
                           </Col>
                           <Col span={12}>
                             <div style={{ marginBottom: 8 }}>
-                              <Text type="secondary" style={{ fontSize: 12 }}>文件统计</Text>
+                              <Text type="secondary" style={{ fontSize: 12 }}>{t('fileStats')}</Text>
                               <div style={{ fontSize: 14 }}>
-                                总计: {log.totalFiles || 0} | 成功: {log.syncedFiles || 0}
+                                {t('total')}: {log.totalFiles || 0} | {t('success')}: {log.syncedFiles || 0}
                               </div>
                               <div style={{ fontSize: 12, color: '#666' }}>
-                                跳过: {log.skippedFiles || 0} | 失败: {log.failedFiles || 0}
+                                {t('skipped')}: {log.skippedFiles || 0} | {t('failed')}: {log.failedFiles || 0}
                               </div>
                             </div>
                             <div>
-                              <Text type="secondary" style={{ fontSize: 12 }}>成功率</Text>
+                              <Text type="secondary" style={{ fontSize: 12 }}>{t('successRate')}</Text>
                               <div>
                                 <Statistic 
                                   value={rate} 
@@ -203,7 +205,7 @@ const HomePage = () => {
             ) : (
               <Empty 
                 image={Empty.PRESENTED_IMAGE_SIMPLE} 
-                description="暂无传输日志" 
+                description={t('noTransferLogs')} 
                 style={{ padding: '20px 0' }}
               />
             )}

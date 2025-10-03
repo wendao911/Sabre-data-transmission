@@ -57,6 +57,10 @@ const Sidebar = ({ collapsed, onMenuClick, t }) => {
           key: '/system-config/file-mapping',
           label: t('fileMapping'),
         },
+        {
+          key: '/system-config/file-type',
+          label: t('fileTypeConfig'),
+        },
       ],
     },
     {

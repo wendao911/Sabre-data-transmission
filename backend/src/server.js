@@ -52,6 +52,7 @@ app.use('/api/sftp', require('./modules/sftp/routes'));
 app.use('/api/schedule', require('./modules/schedule/routes'));
 app.use('/api/file-mapping', require('./modules/fileMapping/routes'));
 app.use('/api/system', require('./modules/system/routes'));
+app.use('/api/file-type-config', require('./modules/fileTypeConfig/routes'));
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {

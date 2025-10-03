@@ -5,11 +5,8 @@ const multer = require('multer');
 const router = express.Router();
 const { walkDir, paginate } = require('../services/fileService');
 const config = require('../../../config');
-
-
-
-
-
+const { FileUploadLog } = require('../models');
+const { SystemLogService } = require('../../system');
 
 // 文件浏览器 API - 层级浏览目录
 router.get('/browser', (req, res) => {
@@ -189,11 +186,18 @@ router.post('/create-directory', (req, res) => {
 // 上传文件 API
 // 使用内存存储，落盘时自行决定目标路径与文件名
 const upload = multer({ storage: multer.memoryStorage() });
-router.post('/upload', upload.single('file'), (req, res) => {
+router.post('/upload', upload.single('file'), async (req, res) => {
+  let uploadLog = null;
+  const startTime = new Date();
+  
   try {
     const rootPath = config.fileBrowser?.rootPath || process.cwd();
-    const { targetPath = '', baseName } = req.body;
+    const { targetPath = '', baseName, fileTypeConfig, remark = '' } = req.body;
     const file = req.file;
+    
+    // 获取用户信息（从请求头或token中获取）
+    const userId = req.headers['x-user-id'] || 'anonymous';
+    const userName = req.headers['x-user-name'] || 'Anonymous User';
 
     if (!file) {
       return res.status(400).json({ success: false, error: '未选择文件' });
@@ -201,6 +205,20 @@ router.post('/upload', upload.single('file'), (req, res) => {
 
     if (!baseName || !baseName.trim()) {
       return res.status(400).json({ success: false, error: '文件名不能为空' });
+    }
+
+    // 验证文件类型配置
+    let fileTypeConfigData = null;
+    if (fileTypeConfig) {
+      try {
+        const FileTypeConfig = require('../fileTypeConfig/models/FileTypeConfig');
+        fileTypeConfigData = await FileTypeConfig.findById(fileTypeConfig);
+        if (!fileTypeConfigData) {
+          return res.status(400).json({ success: false, error: '文件类型配置不存在' });
+        }
+      } catch (error) {
+        return res.status(400).json({ success: false, error: '文件类型配置验证失败' });
+      }
     }
 
     // 以源文件扩展名为准
@@ -220,22 +238,118 @@ router.post('/upload', upload.single('file'), (req, res) => {
     }
 
     const fullTargetPath = path.join(fullTargetDir, finalName);
+    const relativePath = path.relative(rootPath, fullTargetPath);
 
     // 写入文件
     fs.writeFileSync(fullTargetPath, file.buffer);
+
+    // 创建上传记录
+    uploadLog = new FileUploadLog({
+      originalName: file.originalname,
+      savedName: finalName,
+      filePath: relativePath,
+      fullPath: fullTargetPath,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+      uploadedBy: userId,
+      uploadedByName: userName,
+      uploadedAt: startTime,
+      status: 'success',
+      targetDirectory: targetPath,
+      fileExtension: sourceExt,
+      remark: remark,
+      fileTypeConfigId: fileTypeConfigData?._id,
+      fileTypeConfig: fileTypeConfigData ? {
+        module: fileTypeConfigData.module,
+        fileType: fileTypeConfigData.fileType,
+        pushPath: fileTypeConfigData.pushPath
+      } : null
+    });
+
+    await uploadLog.save();
+
+    // 记录系统日志
+    await SystemLogService.logFileOperation(
+      'file_upload',
+      'UPLOAD',
+      `文件上传成功: ${finalName}`,
+      {
+        originalName: file.originalname,
+        savedName: finalName,
+        filePath: relativePath,
+        fileSize: file.size,
+        uploadedBy: userName,
+        remark: remark,
+        fileTypeConfig: fileTypeConfigData ? {
+          module: fileTypeConfigData.module,
+          fileType: fileTypeConfigData.fileType,
+          pushPath: fileTypeConfigData.pushPath
+        } : null,
+        duration: Date.now() - startTime.getTime()
+      }
+    );
 
     return res.json({
       success: true,
       message: '上传成功',
       data: {
         name: finalName,
-        path: path.relative(rootPath, fullTargetPath),
+        path: relativePath,
         fullPath: fullTargetPath,
         size: file.size,
-        mimetype: file.mimetype
+        mimetype: file.mimetype,
+        uploadId: uploadLog._id
       }
     });
   } catch (e) {
+    // 如果已经创建了上传记录，更新为失败状态
+    if (uploadLog) {
+      try {
+        uploadLog.status = 'failed';
+        uploadLog.errorMessage = e.message;
+        await uploadLog.save();
+      } catch (logError) {
+        console.error('更新上传记录失败:', logError);
+      }
+    } else {
+      // 创建失败记录
+      try {
+        const userId = req.headers['x-user-id'] || 'anonymous';
+        const userName = req.headers['x-user-name'] || 'Anonymous User';
+        
+        await FileUploadLog.create({
+          originalName: req.file?.originalname || 'unknown',
+          savedName: 'failed',
+          filePath: 'failed',
+          fullPath: 'failed',
+          fileSize: 0,
+          mimeType: req.file?.mimetype || 'unknown',
+          uploadedBy: userId,
+          uploadedByName: userName,
+          uploadedAt: startTime,
+          status: 'failed',
+          errorMessage: e.message,
+          targetDirectory: req.body?.targetPath || '',
+          fileExtension: ''
+        });
+      } catch (logError) {
+        console.error('创建失败记录失败:', logError);
+      }
+    }
+
+    // 记录系统错误日志
+    await SystemLogService.logSystemError(
+      'file_upload',
+      'file_upload_failed',
+      '文件上传失败',
+      {
+        error: e.message,
+        originalName: req.file?.originalname,
+        uploadedBy: req.headers['x-user-name'] || 'Anonymous User',
+        duration: Date.now() - startTime.getTime()
+      }
+    );
+
     return res.status(500).json({ success: false, error: e.message });
   }
 });
@@ -303,6 +417,154 @@ router.delete('/delete', (req, res) => {
     res.json({ success: true, message: '删除成功' });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 获取文件上传记录 API
+router.get('/upload-logs', async (req, res) => {
+  try {
+    const {
+      page = 1,
+      pageSize = 20,
+      startDate,
+      endDate,
+      status,
+      uploadedBy,
+      search,
+      sortBy = 'uploadedAt',
+      sortOrder = -1
+    } = req.query;
+
+    const query = {};
+    
+    // 状态筛选
+    if (status) {
+      query.status = status;
+    }
+    
+    // 用户筛选
+    if (uploadedBy) {
+      query.uploadedBy = uploadedBy;
+    }
+    
+    // 日期范围筛选
+    if (startDate || endDate) {
+      query.uploadedAt = {};
+      if (startDate) query.uploadedAt.$gte = new Date(startDate);
+      if (endDate) query.uploadedAt.$lte = new Date(endDate);
+    }
+    
+    // 搜索筛选（文件名）
+    if (search) {
+      query.$or = [
+        { originalName: { $regex: search, $options: 'i' } },
+        { savedName: { $regex: search, $options: 'i' } },
+        { filePath: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    // 只显示未删除的记录
+    query.isDeleted = { $ne: true };
+
+    const skip = (page - 1) * pageSize;
+    const sort = { [sortBy]: parseInt(sortOrder) };
+
+    const [logs, total] = await Promise.all([
+      FileUploadLog.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(pageSize))
+        .lean(),
+      FileUploadLog.countDocuments(query)
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        logs,
+        pagination: {
+          current: parseInt(page),
+          pageSize: parseInt(pageSize),
+          total,
+          pages: Math.ceil(total / pageSize)
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 获取文件上传统计 API
+router.get('/upload-stats', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    const matchQuery = {};
+    if (startDate || endDate) {
+      matchQuery.uploadedAt = {};
+      if (startDate) matchQuery.uploadedAt.$gte = new Date(startDate);
+      if (endDate) matchQuery.uploadedAt.$lte = new Date(endDate);
+    }
+    matchQuery.isDeleted = { $ne: true };
+
+    const stats = await FileUploadLog.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+          totalSize: { $sum: '$fileSize' },
+          avgSize: { $avg: '$fileSize' }
+        }
+      }
+    ]);
+
+    const totalStats = await FileUploadLog.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: null,
+          totalCount: { $sum: 1 },
+          totalSize: { $sum: '$fileSize' },
+          successCount: {
+            $sum: { $cond: [{ $eq: ['$status', 'success'] }, 1, 0] }
+          },
+          failedCount: {
+            $sum: { $cond: [{ $eq: ['$status', 'failed'] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    const result = {
+      total: totalStats[0]?.totalCount || 0,
+      totalSize: totalStats[0]?.totalSize || 0,
+      successCount: totalStats[0]?.successCount || 0,
+      failedCount: totalStats[0]?.failedCount || 0,
+      byStatus: {}
+    };
+
+    stats.forEach(stat => {
+      result.byStatus[stat._id] = {
+        count: stat.count,
+        totalSize: stat.totalSize,
+        avgSize: Math.round(stat.avgSize)
+      };
+    });
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 

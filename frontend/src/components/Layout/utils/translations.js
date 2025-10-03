@@ -19,6 +19,7 @@ export const layoutTranslations = {
     sftpConnectionConfig: 'SFTP连接配置',
     scheduledTaskConfig: '定时任务配置',
     fileMapping: '文件映射',
+    fileTypeConfig: '文件类型配置',
     
     // 通用
     collapse: '收起',
@@ -47,6 +48,7 @@ export const layoutTranslations = {
     sftpConnectionConfig: 'SFTP Connection Config',
     scheduledTaskConfig: 'Scheduled Task Config',
     fileMapping: 'File Mapping',
+    fileTypeConfig: 'File Type Config',
     
     // Common
     collapse: 'Collapse',
