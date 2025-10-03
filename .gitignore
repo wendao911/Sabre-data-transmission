@@ -50,8 +50,6 @@ Thumbs.db
 # Project documentation (ignore local docs)
 docs/
 documentation/
-backend/docs/
-frontend/docs/
 document/
 
 # Logs
