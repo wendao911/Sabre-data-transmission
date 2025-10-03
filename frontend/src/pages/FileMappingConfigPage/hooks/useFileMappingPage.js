@@ -13,6 +13,7 @@ export const useFileMappingPage = () => {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [enabled, setEnabled] = useState(undefined);
+  const [matchType, setMatchType] = useState(undefined);
   
   // 模态框状态
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -29,7 +30,8 @@ export const useFileMappingPage = () => {
         page: pagination.current,
         pageSize: pagination.pageSize,
         search: searchTerm,
-        enabled
+        enabled,
+        matchType
       };
       
       const result = await fileMappingService.getRules(params);
@@ -48,7 +50,7 @@ export const useFileMappingPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.current, pagination.pageSize, searchTerm, enabled]);
+  }, [pagination.current, pagination.pageSize, searchTerm, enabled, matchType]);
 
   // 初始加载
   useEffect(() => {
@@ -68,6 +70,12 @@ export const useFileMappingPage = () => {
   // 切换启用状态过滤
   const handleToggleEnabled = (value) => {
     setEnabled(value);
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
+  // 切换匹配类型过滤
+  const handleMatchTypeChange = (value) => {
+    setMatchType(value);
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
@@ -197,6 +205,7 @@ export const useFileMappingPage = () => {
     pagination,
     searchTerm,
     enabled,
+    matchType,
     createModalVisible,
     editModalVisible,
     viewModalVisible,
@@ -207,6 +216,7 @@ export const useFileMappingPage = () => {
     setSearchTerm,
     handlePageChange,
     handleToggleEnabled,
+    handleMatchTypeChange,
     handleRefresh,
     handleCreate,
     handleCreateConfirm,

@@ -20,6 +20,16 @@ router.get('/', async (req, res) => {
   }
 });
 
+// 获取文件类型配置列表
+router.get('/file-type-configs', async (req, res) => {
+  try {
+    const configs = await fileMappingService.getFileTypeConfigs();
+    res.json({ success: true, data: configs });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // 获取单个映射规则
 router.get('/:id', async (req, res) => {
   try {

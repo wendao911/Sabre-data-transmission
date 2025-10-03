@@ -97,6 +97,21 @@ const FileMappingList = ({
       },
     },
     {
+      title: t('matchType'),
+      dataIndex: 'matchType',
+      key: 'matchType',
+      width: 120,
+      align: 'center',
+      render: (matchType) => {
+        const typeMap = {
+          'filename': { color: 'blue', text: '按文件名' },
+          'filetype': { color: 'green', text: '按文件类型' }
+        };
+        const config = typeMap[matchType] || { color: 'default', text: matchType };
+        return <Tag color={config.color} size="small">{config.text}</Tag>;
+      },
+    },
+    {
       title: t('sourceDirectory'),
       dataIndex: ['source', 'directory'],
       key: 'sourceDirectory',
@@ -114,11 +129,30 @@ const FileMappingList = ({
       key: 'sourcePattern',
       width: 150,
       ellipsis: true,
-      render: (text) => (
-        <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">
-          {text}
-        </code>
-      ),
+      render: (text, record) => {
+        if (record.matchType === 'filetype') {
+          // 按文件类型匹配时，显示文件类型配置信息
+          return (
+            <div className="text-xs">
+              <Tag color="green" size="small">文件类型</Tag>
+              {record.source?.fileTypeConfig ? (
+                <div className="mt-1 text-gray-600">
+                  {record.source.fileTypeConfig.module} - {record.source.fileTypeConfig.fileType || '未设置'}
+                </div>
+              ) : (
+                <div className="mt-1 text-gray-400">未配置</div>
+              )}
+            </div>
+          );
+        } else {
+          // 按文件名匹配时，显示模式
+          return (
+            <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">
+              {text || '-'}
+            </code>
+          );
+        }
+      },
     },
     {
       title: t('destinationPath'),

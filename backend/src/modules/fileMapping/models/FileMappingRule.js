@@ -48,6 +48,14 @@ const fileMappingRuleSchema = new mongoose.Schema({
     }
   },
   
+  // 匹配类型
+  matchType: {
+    type: String,
+    enum: ['filename', 'filetype'],
+    default: 'filename',
+    required: true
+  },
+  
   // 源文件匹配条件
   source: {
     directory: {
@@ -57,8 +65,17 @@ const fileMappingRuleSchema = new mongoose.Schema({
     },
     pattern: {
       type: String,
-      required: true,
+      required: function() {
+        return this.matchType === 'filename';
+      },
       trim: true
+    },
+    fileTypeConfig: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'FileTypeConfig',
+      required: function() {
+        return this.matchType === 'filetype';
+      }
     }
   },
   

@@ -3,7 +3,7 @@ const FileMappingRule = require('../models/FileMappingRule');
 class FileMappingService {
   // 获取所有映射规则
   async getAllRules(options = {}) {
-    const { page = 1, pageSize = 10, search, enabled, createdBy, sortBy = 'priority', sortOrder = -1 } = options;
+    const { page = 1, pageSize = 10, search, enabled, matchType, createdBy, sortBy = 'priority', sortOrder = -1 } = options;
     
     const query = {};
     if (search) {
@@ -12,10 +12,12 @@ class FileMappingService {
         { 'source.directory': { $regex: search, $options: 'i' } },
         { 'source.pattern': { $regex: search, $options: 'i' } },
         { 'destination.path': { $regex: search, $options: 'i' } },
-        { 'destination.filename': { $regex: search, $options: 'i' } }
+        { 'destination.filename': { $regex: search, $options: 'i' } },
+        { matchType: { $regex: search, $options: 'i' } }
       ];
     }
     if (enabled !== undefined) query.enabled = enabled;
+    if (matchType) query.matchType = matchType;
     if (createdBy) query.createdBy = createdBy;
     
     const sort = {};
@@ -25,7 +27,11 @@ class FileMappingService {
     const limit = parseInt(pageSize);
     
     const [items, total] = await Promise.all([
-      FileMappingRule.find(query).sort(sort).skip(skip).limit(limit),
+      FileMappingRule.find(query)
+        .populate('source.fileTypeConfig', 'module fileType pushPath')
+        .sort(sort)
+        .skip(skip)
+        .limit(limit),
       FileMappingRule.countDocuments(query)
     ]);
     
@@ -39,7 +45,8 @@ class FileMappingService {
   
   // 根据ID获取映射规则
   async getRuleById(id) {
-    return await FileMappingRule.findById(id);
+    return await FileMappingRule.findById(id)
+      .populate('source.fileTypeConfig', 'module fileType pushPath');
   }
   
   // 创建映射规则
@@ -87,7 +94,9 @@ class FileMappingService {
   
   // 获取启用的映射规则（按优先级排序）
   async getEnabledRules() {
-    return await FileMappingRule.find({ enabled: true }).sort({ priority: -1 });
+    return await FileMappingRule.find({ enabled: true })
+      .populate('source.fileTypeConfig', 'module fileType pushPath')
+      .sort({ priority: -1 });
   }
   
   // 验证映射规则数据
@@ -107,6 +116,11 @@ class FileMappingService {
       errors.push('优先级必须在1-1000之间');
     }
     
+    // 验证匹配类型
+    if (!ruleData.matchType || !['filename', 'filetype'].includes(ruleData.matchType)) {
+      errors.push('匹配类型必须是 filename 或 filetype');
+    }
+    
     // 验证源配置
     if (!ruleData.source) {
       errors.push('源配置不能为空');
@@ -114,8 +128,16 @@ class FileMappingService {
       if (!ruleData.source.directory || ruleData.source.directory.trim().length === 0) {
         errors.push('源目录不能为空');
       }
-      if (!ruleData.source.pattern || ruleData.source.pattern.trim().length === 0) {
-        errors.push('源文件模式不能为空');
+      
+      // 根据匹配类型验证不同字段
+      if (ruleData.matchType === 'filename') {
+        if (!ruleData.source.pattern || ruleData.source.pattern.trim().length === 0) {
+          errors.push('源文件模式不能为空');
+        }
+      } else if (ruleData.matchType === 'filetype') {
+        if (!ruleData.source.fileTypeConfig) {
+          errors.push('文件类型配置不能为空');
+        }
       }
     }
     
@@ -154,6 +176,14 @@ class FileMappingService {
       query._id = { $ne: excludeId };
     }
     return await FileMappingRule.findOne(query);
+  }
+  
+  // 获取文件类型配置列表
+  async getFileTypeConfigs() {
+    const FileTypeConfig = require('../../fileTypeConfig/models/FileTypeConfig');
+    return await FileTypeConfig.find({ isDeleted: { $ne: true }, enabled: true })
+      .select('_id module fileType pushPath')
+      .sort({ module: 1, fileType: 1 });
   }
 }
 

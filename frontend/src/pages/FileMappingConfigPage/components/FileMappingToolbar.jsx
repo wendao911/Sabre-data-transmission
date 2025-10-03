@@ -20,8 +20,10 @@ const { Option } = Select;
 const FileMappingToolbar = ({
   searchTerm,
   enabled,
+  matchType,
   onSearchChange,
   onToggleEnabled,
+  onMatchTypeChange,
   onRefresh,
   onCreate
 }) => {
@@ -32,6 +34,13 @@ const FileMappingToolbar = ({
     { value: 'all', label: t('all') },
     { value: 'enabled', label: t('enabledOnly') },
     { value: 'disabled', label: t('disabledOnly') }
+  ];
+
+  // 匹配类型过滤选项
+  const matchTypeOptions = [
+    { value: 'all', label: '全部' },
+    { value: 'filename', label: '按文件名' },
+    { value: 'filetype', label: '按文件类型' }
   ];
 
 
@@ -58,6 +67,22 @@ const FileMappingToolbar = ({
           style={{ width: 120 }}
         >
           {statusOptions.map(option => (
+            <Option key={option.value} value={option.value}>
+              {option.label}
+            </Option>
+          ))}
+        </Select>
+
+        <Select
+          value={matchType === undefined ? 'all' : matchType}
+          onChange={(value) => {
+            const newMatchType = value === 'all' ? undefined : value;
+            onMatchTypeChange(newMatchType);
+          }}
+          placeholder="匹配类型"
+          style={{ width: 120 }}
+        >
+          {matchTypeOptions.map(option => (
             <Option key={option.value} value={option.value}>
               {option.label}
             </Option>

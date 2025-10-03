@@ -98,5 +98,16 @@ export const fileMappingService = {
       console.error('获取启用的映射规则失败:', error);
       throw error;
     }
+  },
+
+  // 获取文件类型配置列表
+  async getFileTypeConfigs() {
+    try {
+      const response = await apiClient.getClient().get('/file-mapping/file-type-configs');
+      return response.data;
+    } catch (error) {
+      console.error('获取文件类型配置失败:', error);
+      throw error;
+    }
   }
 };

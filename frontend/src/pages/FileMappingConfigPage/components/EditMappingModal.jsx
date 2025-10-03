@@ -8,9 +8,12 @@ import {
   Row, 
   Col,
   Divider,
-  message
+  message,
+  Tag
 } from 'antd';
 import { useLanguage } from '../hooks/useLanguage';
+import { fileMappingService } from '../services/fileMappingService';
+import { fileTypeConfigService } from '../../FileTypeConfigPage/services/fileTypeConfigService';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -19,6 +22,30 @@ const EditMappingModal = ({ visible, rule, onConfirm, onCancel }) => {
   const { t } = useLanguage();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [fileTypeConfigs, setFileTypeConfigs] = useState([]);
+  const [loadingConfigs, setLoadingConfigs] = useState(false);
+
+  // 加载文件类型配置
+  const loadFileTypeConfigs = async () => {
+    try {
+      setLoadingConfigs(true);
+      const data = await fileTypeConfigService.getConfigs({ pageSize: 1000 });
+      const configs = data.data?.configs || [];
+      setFileTypeConfigs(configs);
+    } catch (error) {
+      console.error('加载文件类型配置失败:', error);
+      message.error('加载文件类型配置失败');
+    } finally {
+      setLoadingConfigs(false);
+    }
+  };
+
+  // 当模态框打开时加载文件类型配置
+  useEffect(() => {
+    if (visible) {
+      loadFileTypeConfigs();
+    }
+  }, [visible]);
 
   // 当规则数据变化时，更新表单
   useEffect(() => {
@@ -28,6 +55,7 @@ const EditMappingModal = ({ visible, rule, onConfirm, onCancel }) => {
         module: rule.module,
         enabled: rule.enabled,
         priority: rule.priority,
+        matchType: rule.matchType || 'filename',
         schedule: {
           period: rule.schedule?.period || 'daily',
           weekday: rule.schedule?.weekday,
@@ -35,7 +63,8 @@ const EditMappingModal = ({ visible, rule, onConfirm, onCancel }) => {
         },
         source: {
           directory: rule.source?.directory || '',
-          pattern: rule.source?.pattern || ''
+          pattern: rule.source?.pattern || '',
+          fileTypeConfig: rule.source?.fileTypeConfig
         },
         destination: {
           path: rule.destination?.path || '',
@@ -198,6 +227,21 @@ const EditMappingModal = ({ visible, rule, onConfirm, onCancel }) => {
         <Divider orientation="left">源文件配置</Divider>
         
         <Row gutter={16}>
+          <Col span={24}>
+            <Form.Item
+              name="matchType"
+              label={t('matchType')}
+              rules={[{ required: true, message: t('matchTypeRequired') }]}
+            >
+              <Select placeholder="请选择匹配类型">
+                <Option value="filename">按文件名匹配</Option>
+                <Option value="filetype">按文件类型匹配</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
+        
+        <Row gutter={16}>
           <Col span={12}>
             <Form.Item
               name={['source', 'directory']}
@@ -211,15 +255,59 @@ const EditMappingModal = ({ visible, rule, onConfirm, onCancel }) => {
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item
-              name={['source', 'pattern']}
-              label={t('sourcePattern')}
-              rules={[{ required: true, message: t('sourcePatternRequired') }]}
-            >
-              <Input 
-                placeholder="finance_*.csv"
-                addonBefore="模式"
-              />
+            <Form.Item noStyle shouldUpdate={(prev, cur) => prev.matchType !== cur.matchType}>
+              {({ getFieldValue }) => {
+                const matchType = getFieldValue('matchType');
+                if (matchType === 'filename') {
+                  return (
+                    <Form.Item
+                      name={['source', 'pattern']}
+                      label={t('sourcePattern')}
+                      rules={[{ required: true, message: t('sourcePatternRequired') }]}
+                    >
+                      <Input 
+                        placeholder="finance_*.csv"
+                        addonBefore="模式"
+                      />
+                    </Form.Item>
+                  );
+                } else if (matchType === 'filetype') {
+                  return (
+                    <Form.Item
+                      name={['source', 'fileTypeConfig']}
+                      label={t('fileTypeConfig')}
+                      rules={[{ required: true, message: t('fileTypeConfigRequired') }]}
+                    >
+                      <Select 
+                        placeholder="请选择文件类型配置"
+                        loading={loadingConfigs}
+                        showSearch
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                          option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                        }
+                      >
+                        {fileTypeConfigs.map(config => (
+                          <Option key={config._id} value={config._id}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>
+                                <Tag color="blue" style={{ marginRight: 8 }}>{config.module}</Tag>
+                                {config.fileType || '未设置文件类型'}
+                              </span>
+                              {config.pushPath && (
+                                <span style={{ fontSize: '12px', color: '#999' }}>
+                                  {config.pushPath}
+                                </span>
+                              )}
+                            </div>
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  );
+                }
+                return null;
+              }}
             </Form.Item>
           </Col>
         </Row>

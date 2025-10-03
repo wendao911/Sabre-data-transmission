@@ -23,8 +23,10 @@ export const fileMappingTranslations = {
     // 表格列
     description: '规则描述',
     module: '所属模块',
+    matchType: '匹配类型',
     sourceDirectory: '源目录',
     sourcePattern: '源文件模式',
+    fileTypeConfig: '文件类型配置',
     destinationPath: '目标路径',
     destinationFilename: '目标文件名',
     conflictStrategy: '冲突策略',
@@ -89,8 +91,10 @@ export const fileMappingTranslations = {
     // 表单验证
     descriptionRequired: '规则描述不能为空',
     moduleRequired: '所属模块不能为空',
+    matchTypeRequired: '匹配类型不能为空',
     sourceDirectoryRequired: '源目录不能为空',
     sourcePatternRequired: '源文件模式不能为空',
+    fileTypeConfigRequired: '文件类型配置不能为空',
     destinationPathRequired: '目标路径不能为空',
     destinationFilenameRequired: '目标文件名模板不能为空',
     priorityRequired: '优先级不能为空',
@@ -127,8 +131,10 @@ export const fileMappingTranslations = {
     // Table columns
     description: 'Description',
     module: 'Module',
+    matchType: 'Match Type',
     sourceDirectory: 'Source Directory',
     sourcePattern: 'Source Pattern',
+    fileTypeConfig: 'File Type Config',
     destinationPath: 'Destination Path',
     destinationFilename: 'Destination Filename',
     conflictStrategy: 'Conflict Strategy',
@@ -193,8 +199,10 @@ export const fileMappingTranslations = {
     // Form validation
     descriptionRequired: 'Rule description is required',
     moduleRequired: 'Module is required',
+    matchTypeRequired: 'Match type is required',
     sourceDirectoryRequired: 'Source directory is required',
     sourcePatternRequired: 'Source pattern is required',
+    fileTypeConfigRequired: 'File type config is required',
     destinationPathRequired: 'Destination path is required',
     destinationFilenameRequired: 'Destination filename template is required',
     priorityRequired: 'Priority is required',

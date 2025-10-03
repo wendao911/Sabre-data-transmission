@@ -19,9 +19,11 @@ const FileMappingConfigPage = () => {
     pagination,
     searchTerm,
     enabled,
+    matchType,
     setSearchTerm,
     handlePageChange,
     handleToggleEnabled,
+    handleMatchTypeChange,
     handleRefresh,
     createModalVisible,
     handleCreate,
@@ -54,8 +56,10 @@ const FileMappingConfigPage = () => {
         <FileMappingToolbar 
           searchTerm={searchTerm}
           enabled={enabled}
+          matchType={matchType}
           onSearchChange={setSearchTerm}
           onToggleEnabled={handleToggleEnabled}
+          onMatchTypeChange={handleMatchTypeChange}
           onRefresh={handleRefresh}
           onCreate={handleCreate}
         />
