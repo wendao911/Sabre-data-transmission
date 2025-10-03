@@ -33,7 +33,7 @@ async function syncByMapping(dateStr) {
   
   // 1. 创建任务日志
   const taskLog = new TransferLogTask({
-    taskDate: parseDateString(dateStr),
+    taskDate: dateStr, // 直接使用 YYYYMMDD 格式的字符串
     startTime: startTime,
     status: 'success' // 初始状态，后续会根据结果更新
   });

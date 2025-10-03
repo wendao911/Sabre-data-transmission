@@ -221,8 +221,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       }
     }
 
-    // 以源文件扩展名为准
-    const sourceExt = path.extname(file.originalname);
+    // 修正中文/特殊字符文件名乱码（某些客户端按 latin1 传输）
+    const decodedOriginalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    // 以源文件扩展名为准（基于解码后的原始名）
+    const sourceExt = path.extname(decodedOriginalName);
     const finalName = `${baseName.trim()}${sourceExt}`;
 
     // 计算落盘目录
@@ -245,7 +247,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     // 创建上传记录
     uploadLog = new FileUploadLog({
-      originalName: file.originalname,
+      originalName: decodedOriginalName,
       savedName: finalName,
       filePath: relativePath,
       fullPath: fullTargetPath,
@@ -274,7 +276,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       'UPLOAD',
       `文件上传成功: ${finalName}`,
       {
-        originalName: file.originalname,
+        originalName: decodedOriginalName,
         savedName: finalName,
         filePath: relativePath,
         fileSize: file.size,
@@ -387,7 +389,7 @@ router.get('/download', (req, res) => {
 });
 
 // 删除文件 API
-router.delete('/delete', (req, res) => {
+router.delete('/delete', async (req, res) => {
   try {
     const rootPath = config.fileBrowser?.rootPath || process.cwd();
     const { path: filePath } = req.body;
@@ -412,6 +414,13 @@ router.delete('/delete', (req, res) => {
       fs.rmdirSync(fullFilePath, { recursive: true });
     } else {
       fs.unlinkSync(fullFilePath);
+      try {
+        // 同步删除数据库上传记录（硬删除）
+        await FileUploadLog.deleteMany({ filePath: filePath });
+      } catch (logErr) {
+        // 不阻断文件删除流程，只记录错误
+        console.error('删除上传记录失败:', logErr);
+      }
     }
     
     res.json({ success: true, message: '删除成功' });
@@ -495,6 +504,41 @@ router.get('/upload-logs', async (req, res) => {
       success: false,
       error: error.message
     });
+  }
+});
+
+// 获取指定相对路径的最新上传记录
+router.get('/upload-log/by-path', async (req, res) => {
+  try {
+    const { path: relativePath } = req.query;
+    if (!relativePath) {
+      return res.status(400).json({ success: false, error: '缺少 path 参数' });
+    }
+
+    const log = await FileUploadLog.findOne({ filePath: relativePath, isDeleted: { $ne: true } })
+      .sort({ uploadedAt: -1 })
+      .lean();
+
+    return res.json({ success: true, data: { log } });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 更新上传记录备注
+router.put('/upload-log/:id/remark', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { remark = '' } = req.body || {};
+    const log = await FileUploadLog.findById(id);
+    if (!log) {
+      return res.status(404).json({ success: false, error: '记录不存在' });
+    }
+    log.remark = remark;
+    await log.save();
+    return res.json({ success: true, data: { log } });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 

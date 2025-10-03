@@ -1,5 +1,5 @@
-import React from 'react';
-import { Modal, Progress } from 'antd';
+import React, { useState } from 'react';
+import { Modal, Progress, Descriptions, Tag, Input, Button, message } from 'antd';
 import { CloudServerOutlined } from '@ant-design/icons';
 import { useSFTPTransfer } from './hooks/useSFTPTransfer';
 import { useLanguage } from './hooks/useLanguage';
@@ -10,10 +10,13 @@ import { CreateDirectoryModal } from './components/CreateDirectoryModal';
 import { SyncModal } from './components/SyncModal';
 import SyncProgressModal from './components/SyncProgressModal';
 import { PageTitle, PageContainer } from '../../components/Common';
+import fileService from '../../services/files/fileService';
 
 
 const SFTPTransferPage = () => {
   const { t } = useLanguage();
+  const [fileDetailVisible, setFileDetailVisible] = useState(false);
+  const [fileDetail, setFileDetail] = useState(null);
   const {
     // State
     isConnected,
@@ -140,6 +143,20 @@ const SFTPTransferPage = () => {
           pagination={sftpPagination}
           onPageChange={(page, pageSize) => onSftpPageChange(page, pageSize)}
           onSortChange={(field, order) => onSftpSortChange(field, order)}
+          onViewFile={async (path) => {
+            try {
+              const resp = await fileService.getUploadLogByPath(path.startsWith('/') ? path.substring(1) : path);
+              if (resp?.success && resp.data?.log) {
+                setFileDetail(resp.data.log);
+              } else {
+                setFileDetail({ filePath: path, status: 'not_found' });
+              }
+            } catch (e) {
+              setFileDetail({ filePath: path, status: 'error', errorMessage: e.message });
+            } finally {
+              setFileDetailVisible(true);
+            }
+          }}
         />
       </div>
 
@@ -201,6 +218,72 @@ const SFTPTransferPage = () => {
         syncData={syncProgressData}
         isRunning={syncRunning}
       />
+      {/* 文件详情 */}
+      <Modal
+        title={t('file_details') || '文件详情'}
+        open={fileDetailVisible}
+        onCancel={() => { setFileDetailVisible(false); setFileDetail(null); }}
+        footer={null}
+        width={900}
+        centered
+        bodyStyle={{ padding: 20, maxHeight: 600, overflowY: 'auto' }}
+      >
+        {fileDetail ? (
+          <Descriptions
+            bordered
+            size="middle"
+            column={2}
+            labelStyle={{ width: 180, fontWeight: 600, background: '#fafafa' }}
+            contentStyle={{ background: '#fff' }}
+          >
+            <Descriptions.Item label={t('file_path') || '相对路径'} span={2}>{fileDetail.filePath || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('original_name') || '原始文件名'}>{fileDetail.originalName || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('saved_name') || '保存文件名'}>{fileDetail.savedName || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('status') || '状态'}>
+              <Tag color={fileDetail.status === 'success' ? 'green' : (fileDetail.status === 'failed' ? 'red' : 'default')}>
+                {fileDetail.status || 'N/A'}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label={t('file_size') || '大小'}>{fileDetail.fileSize || 0}</Descriptions.Item>
+            <Descriptions.Item label={t('mime_type') || 'MIME类型'}>{fileDetail.mimeType || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('uploaded_by') || '上传用户'}>{fileDetail.uploadedByName || fileDetail.uploadedBy || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('uploaded_at') || '上传时间'}>{fileDetail.uploadedAt ? new Date(fileDetail.uploadedAt).toLocaleString() : '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('file_type') || '文件类型'}>
+              {fileDetail?.fileTypeConfig || '-'}
+            </Descriptions.Item>
+            {fileDetail.status === 'not_found' && (
+              <Descriptions.Item label={t('message') || '消息'} span={2}>{t('no_upload_log') || '未找到对应的上传记录'}</Descriptions.Item>
+            )}
+            {fileDetail.status === 'error' && (
+              <Descriptions.Item label={t('message') || '消息'} span={2}>{fileDetail.errorMessage || '-'}</Descriptions.Item>
+            )}
+            <Descriptions.Item label={t('remark') || '备注'} span={2}>
+              <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                <Input.TextArea
+                  rows={4}
+                  defaultValue={fileDetail.remark || ''}
+                  onChange={(e)=>{ setFileDetail({ ...fileDetail, remark: e.target.value }); }}
+                  maxLength={500}
+                  showCount
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  type="primary"
+                  onClick={async ()=>{
+                    if (!fileDetail?._id) return;
+                    const resp = await fileService.updateUploadLogRemark(fileDetail._id, fileDetail.remark || '');
+                    if (resp?.success) {
+                      message.success(t('saved') || '已保存');
+                    } else {
+                      message.error(resp?.error || (t('save_failed') || '保存失败'));
+                    }
+                  }}
+                >{t('save') || '保存'}</Button>
+              </div>
+            </Descriptions.Item>
+          </Descriptions>
+        ) : null}
+      </Modal>
     </PageContainer>
   );
 };

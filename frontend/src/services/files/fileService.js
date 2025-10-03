@@ -27,10 +27,14 @@ export const fileService = {
     }
   },
 
-  async deleteFile(filePath) {
+  async deleteFile(fileOrPath) {
     try {
+      let path = typeof fileOrPath === 'string'
+        ? fileOrPath
+        : (fileOrPath?.path || fileOrPath?.fullPath || fileOrPath?.name || '');
+      if (path && path.startsWith('/')) path = path.substring(1);
       const response = await apiClient.getClient().delete(`/files/delete`, {
-        data: { path: filePath }
+        data: { path }
       });
       return response.data;
     } catch (error) {
@@ -139,17 +143,43 @@ export const fileService = {
   ,
 
   // 上传文件 API
-  async uploadFile({ file, targetPath = '', baseName }) {
+  async uploadFile({ file, targetPath = '', baseName, fileTypeConfig, remark }) {
     try {
       const form = new FormData();
       form.append('file', file);
       form.append('targetPath', targetPath);
       form.append('baseName', baseName);
+      if (fileTypeConfig) form.append('fileTypeConfig', fileTypeConfig);
+      if (remark !== undefined) form.append('remark', remark);
 
       const client = apiClient.getClient();
       const response = await client.post('/files/upload', form, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      return response.data;
+    } catch (error) {
+      apiClient.handleError(error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // 获取指定相对路径的上传记录
+  async getUploadLogByPath(relativePath) {
+    try {
+      const response = await apiClient.getClient().get('/files/upload-log/by-path', {
+        params: { path: relativePath }
+      });
+      return response.data;
+    } catch (error) {
+      apiClient.handleError(error);
+      return { success: false, error: error.message };
+    }
+  },
+  
+  // 更新上传记录备注
+  async updateUploadLogRemark(id, remark) {
+    try {
+      const response = await apiClient.getClient().put(`/files/upload-log/${id}/remark`, { remark });
       return response.data;
     } catch (error) {
       apiClient.handleError(error);

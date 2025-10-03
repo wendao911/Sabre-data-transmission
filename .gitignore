@@ -16,6 +16,7 @@ Sabre Data Decryption.zip
 
 # SFTP test directory
 sftp_test/
+revenue_docs/
 
 # Keys and passwords
 *.asc

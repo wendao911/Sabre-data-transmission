@@ -9,7 +9,7 @@ const DecryptLogSchema = new mongoose.Schema({
   duration: { type: Number, default: 0 },
   message: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
-}, { collection: 'logs_decrypt' });
+}, { collection: 'decryp_logs' });
 
 module.exports = mongoose.model('DecryptLog', DecryptLogSchema);
 

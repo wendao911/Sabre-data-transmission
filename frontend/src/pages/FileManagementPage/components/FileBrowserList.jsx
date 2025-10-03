@@ -17,7 +17,8 @@ const FileBrowserList = ({
   pagination,
   onPageChange,
   onFileAction,
-  onNavigateToDirectory
+  onNavigateToDirectory,
+  onViewFile
 }) => {
   const { t } = useLanguage();
   const formatFileSize = (bytes) => {
@@ -55,7 +56,7 @@ const FileBrowserList = ({
   const handleAction = async (action, file) => {
     try {
       await onFileAction(action, file);
-      message.success(`${action === 'download' ? t('actions.download') : t('actions.delete')}操作已开始`);
+      // 成功提示由具体操作的处理流程决定，这里不再提示“操作已开始”
     } catch (error) {
       message.error(`${action === 'download' ? t('actions.download') : t('actions.delete')}操作失败`);
     }
@@ -71,8 +72,13 @@ const FileBrowserList = ({
           {getFileIcon(record)}
           <Tooltip title={record.isDirectory ? t('actions.enterDirectory') : ''}>
             <span 
-              className={`font-medium ${record.isDirectory ? 'text-blue-600 hover:text-blue-800 cursor-pointer hover:underline transition-colors' : 'text-gray-900'}`}
-              onClick={record.isDirectory ? () => onNavigateToDirectory(record.path) : undefined}
+              className={`font-semibold ${record.isDirectory ? 'text-blue-600 hover:text-blue-800 cursor-pointer hover:underline transition-colors' : 'text-blue-700 hover:text-blue-900 cursor-pointer hover:underline transition-colors'}`}
+              style={{
+                textDecoration: 'underline',
+                textUnderlineOffset: 2,
+                fontWeight: 600
+              }}
+              onClick={record.isDirectory ? () => onNavigateToDirectory(record.path) : (() => onViewFile && onViewFile(record.path))}
             >
               {text}
             </span>

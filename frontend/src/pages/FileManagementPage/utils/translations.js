@@ -33,11 +33,31 @@ export const fileBrowserTranslations = {
     // 表格列标题
     columns: {
       name: '名称',
+      path: '路径',
       size: '大小',
       modified: '修改时间',
       type: '类型',
       actions: '操作'
     },
+    file_details: '文件详情',
+    file_path: '相对路径',
+    original_name: '原始文件名',
+    saved_name: '保存文件名',
+    status: '状态',
+    file_size: '大小',
+    mime_type: 'MIME类型',
+    uploaded_by: '上传用户',
+    uploaded_at: '上传时间',
+    remark: '备注',
+    file_type_config: '文件类型配置',
+    message: '消息',
+    no_upload_log: '未找到对应的上传记录',
+    save: '保存',
+    saved: '已保存',
+    save_failed: '保存失败',
+    module: '模块',
+    file_type: '文件类型',
+    push_path: '推送路径',
     
     // 文件类型
     fileTypes: {
@@ -161,11 +181,31 @@ export const fileBrowserTranslations = {
     // Table columns
     columns: {
       name: 'Name',
+      path: 'Path',
       size: 'Size',
       modified: 'Modified',
       type: 'Type',
       actions: 'Actions'
     },
+    file_details: 'File Details',
+    file_path: 'Relative Path',
+    original_name: 'Original Name',
+    saved_name: 'Saved Name',
+    status: 'Status',
+    file_size: 'Size',
+    mime_type: 'MIME Type',
+    uploaded_by: 'Uploaded By',
+    uploaded_at: 'Uploaded At',
+    remark: 'Remark',
+    file_type_config: 'File Type Config',
+    message: 'Message',
+    no_upload_log: 'No upload record found',
+    save: 'Save',
+    saved: 'Saved',
+    save_failed: 'Save failed',
+    module: 'Module',
+    file_type: 'File Type',
+    push_path: 'Push Path',
     
     // File types
     fileTypes: {

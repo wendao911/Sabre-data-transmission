@@ -9,7 +9,19 @@ import { PageTitle, ModernTable, ModernPagination, PageContainer } from '../../c
 // 使用原生 Date 对象处理日期
 const formatDate = (date, format = 'YYYY-MM-DD HH:mm:ss') => {
   if (!date) return '-';
-  const d = new Date(date);
+  
+  // 如果是 YYYYMMDD 格式的字符串，先转换为 Date 对象
+  let d;
+  if (typeof date === 'string' && /^\d{8}$/.test(date)) {
+    // YYYYMMDD 格式
+    const year = parseInt(date.substring(0, 4));
+    const month = parseInt(date.substring(4, 6)) - 1; // 月份从0开始
+    const day = parseInt(date.substring(6, 8));
+    d = new Date(year, month, day);
+  } else {
+    d = new Date(date);
+  }
+  
   if (isNaN(d.getTime())) return '-';
   
   const year = d.getFullYear();

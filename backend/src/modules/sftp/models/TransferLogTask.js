@@ -3,9 +3,16 @@ const mongoose = require('mongoose');
 const transferLogTaskSchema = new mongoose.Schema({
   // 任务基本信息
   taskDate: {
-    type: Date,
+    type: String,
     required: true,
-    comment: '任务执行日期'
+    validate: {
+      validator: function(v) {
+        // 验证格式为 YYYYMMDD
+        return /^\d{8}$/.test(v);
+      },
+      message: 'taskDate must be in YYYYMMDD format'
+    },
+    comment: '任务执行日期 (YYYYMMDD格式)'
   },
   startTime: {
     type: Date,

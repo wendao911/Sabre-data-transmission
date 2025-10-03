@@ -77,6 +77,25 @@ export const translations = {
     action_sync: '同步文件到SFTP（自动连接）',
     pagination_total: '第 {start}-{end} 条，共 {total} 条'
     ,
+    // 文件详情
+    file_details: '文件详情',
+    file_path: '相对路径',
+    original_name: '原始文件名',
+    saved_name: '保存文件名',
+    status: '状态',
+    file_size: '大小',
+    mime_type: 'MIME类型',
+    uploaded_by: '上传用户',
+    uploaded_at: '上传时间',
+    remark: '备注',
+    file_type_config: '文件类型配置',
+    message: '消息',
+    no_upload_log: '未找到对应的上传记录'
+    ,
+    save: '保存',
+    saved: '已保存',
+    save_failed: '保存失败'
+    ,
     // Local file browser
     local_server_files: '服务器本地文件',
     action_upload: '上传文件',
@@ -159,6 +178,25 @@ export const translations = {
     action_create_dir: 'Create directory',
     action_sync: 'Sync files to SFTP (auto connect)',
     pagination_total: '{start}-{end} of {total}'
+    ,
+    // File details
+    file_details: 'File Details',
+    file_path: 'Relative Path',
+    original_name: 'Original Name',
+    saved_name: 'Saved Name',
+    status: 'Status',
+    file_size: 'Size',
+    mime_type: 'MIME Type',
+    uploaded_by: 'Uploaded By',
+    uploaded_at: 'Uploaded At',
+    remark: 'Remark',
+    file_type_config: 'File Type Config',
+    message: 'Message',
+    no_upload_log: 'No upload record found'
+    ,
+    save: 'Save',
+    saved: 'Saved',
+    save_failed: 'Save failed'
     ,
     // Local file browser
     local_server_files: 'Server Local Files',

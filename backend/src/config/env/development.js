@@ -1,5 +1,5 @@
 // 根目录路径
-const rootPath = 'C:\\Users\\18252\\Desktop\\K6\\coding\\ACCA';
+const rootPath = 'C:\\Users\\18252\\Desktop\\K6\\coding\\ACCA\\revenue docs';
 
 module.exports = {
   server: {

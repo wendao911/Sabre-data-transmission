@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const sftpService = require('../services/sftpService');
-const { logTransferDayResult } = require('../../files/services/transferLogService');
 const { SFTPConfig } = require('../models');
 const { syncByMapping } = require('../services/syncService');
 const TransferLogFile = require('../models/TransferLogFile');
@@ -402,7 +401,7 @@ async function transferDecryptedFiles(date) {
     await sftpService.uploadFile(localPath, remotePath);
   }
 
-  await logTransferDayResult(date, files.length, 'success');
+  // 旧日志已移除，不再记录 logs_transfer
 }
 
 module.exports = router;

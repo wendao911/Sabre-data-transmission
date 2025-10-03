@@ -1,5 +1,5 @@
 // 根目录路径
-const rootPath = '/data/sabre';
+const rootPath = '/data/sabre/revenue docs';
 
 module.exports = {
   server: {

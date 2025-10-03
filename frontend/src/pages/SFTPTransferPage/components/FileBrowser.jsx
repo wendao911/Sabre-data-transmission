@@ -30,7 +30,8 @@ const FileBrowser = ({
   onDownloadFile,
   pagination,
   onPageChange,
-  onSortChange
+  onSortChange,
+  onViewFile
 }) => {
   const { t } = useLanguage();
   const generateBreadcrumb = () => {
@@ -63,13 +64,18 @@ const FileBrowser = ({
             )}
             <span
               style={{
-                cursor: isDirectory ? 'pointer' : 'default',
-                color: isDirectory ? '#1890ff' : '#000'
+                cursor: 'pointer',
+                color: isDirectory ? '#1890ff' : '#1d4ed8',
+                fontWeight: isDirectory ? 500 : 600,
+                textDecoration: 'underline',
+                textUnderlineOffset: 2
               }}
               onClick={() => {
+                const newPath = currentPath === '/' ? `/${record.name}` : `${currentPath}/${record.name}`;
                 if (isDirectory) {
-                  const newPath = currentPath === '/' ? `/${record.name}` : `${currentPath}/${record.name}`;
                   onNavigateDirectory(newPath);
+                } else if (typeof onViewFile === 'function') {
+                  onViewFile(newPath);
                 }
               }}
             >

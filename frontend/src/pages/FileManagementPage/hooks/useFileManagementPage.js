@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { message } from 'antd';
+import { message, Modal } from 'antd';
 import { fileService } from '../services/fileService';
 import config from '../../../config';
 
@@ -72,6 +72,19 @@ export const useFileManagementPage = () => {
         window.URL.revokeObjectURL(url);
         message.success('下载成功');
       } else if (action === 'delete') {
+        const confirmed = await new Promise((resolve) => {
+          Modal.confirm({
+            title: '确认删除',
+            content: `确定要删除 ${file.name} 吗？该操作不可恢复。`,
+            okText: '删除',
+            okType: 'danger',
+            cancelText: '取消',
+            onOk: () => resolve(true),
+            onCancel: () => resolve(false)
+          });
+        });
+        if (!confirmed) return;
+
         const result = await fileService.deleteFile(file);
         if (result.success) {
           message.success('删除成功');
@@ -148,9 +161,9 @@ export const useFileManagementPage = () => {
     setUploadModalVisible(true);
   };
 
-  const handleUploadConfirm = async ({ file, targetPath, baseName }) => {
+  const handleUploadConfirm = async ({ file, targetPath, baseName, fileTypeConfig, remark }) => {
     try {
-      const result = await fileService.uploadFile({ file, targetPath: targetPath ?? currentPath, baseName });
+      const result = await fileService.uploadFile({ file, targetPath: targetPath ?? currentPath, baseName, fileTypeConfig, remark });
       if (result.success) {
         message.success('上传成功');
         setUploadModalVisible(false);
