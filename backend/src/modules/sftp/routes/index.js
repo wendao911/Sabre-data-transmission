@@ -216,9 +216,13 @@ router.get('/download-stream', async (req, res) => {
 // 根据映射规则同步文件（按日期）
 router.post('/sync/by-mapping', async (req, res) => {
   try {
-    const { date } = req.body; // YYYY-MM-DD
+    const { date } = req.body; // 可能为 YYYY-MM-DD 或 YYYYMMDD
     if (!date) return res.status(400).json({ success: false, message: '缺少 date 参数' });
-    const result = await syncByMapping(date);
+    const dateStr = /^\d{8}$/.test(date) ? date : String(date).replace(/-/g, '');
+    if (!/^\d{8}$/.test(dateStr)) {
+      return res.status(400).json({ success: false, message: 'date 参数格式应为 YYYYMMDD 或 YYYY-MM-DD' });
+    }
+    const result = await syncByMapping(dateStr);
     return res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

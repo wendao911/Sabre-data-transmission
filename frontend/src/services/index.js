@@ -1,18 +1,11 @@
-// 导出所有 API 服务
-export { authService } from './auth';
-export { fileService } from './files';
-export { decryptService } from './decrypt';
-export { sftpService } from './sftp';
-export { scheduleService } from './schedule';
-export { healthService } from './health';
+// 扁平化后的服务统一导出
+import authService from './authService';
+import fileService from './fileService';
+import decryptService from './decryptService';
+import sftpService from './sftpService';
+import scheduleService from './scheduleService';
+import healthService from './healthService';
 
-// 为了向后兼容，保留旧的导出方式（使用同步导入）
-import { authService } from './auth';
-import { fileService } from './files';
-import { decryptService } from './decrypt';
-import { sftpService } from './sftp';
-import { scheduleService } from './schedule';
-import { healthService } from './health';
 
 export const authAPI = {
   login: (email, password) => authService.login(email, password),
@@ -73,11 +66,4 @@ export const healthAPI = {
 };
 
 // 默认导出
-export default {
-  auth: authService,
-  files: fileService,
-  decrypt: decryptService,
-  sftp: sftpService,
-  schedule: scheduleService,
-  health: healthService,
-};
+export default { auth: authService, files: fileService, decrypt: decryptService, sftp: sftpService, schedule: scheduleService, health: healthService };

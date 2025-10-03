@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { message } from 'antd';
-import { scheduleService } from '../../../services';
+import scheduleService from '../../../services/scheduleService';
 import { useLanguage } from './useLanguage';
 
 export const useScheduledTasks = () => {

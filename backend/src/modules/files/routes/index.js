@@ -211,7 +211,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     let fileTypeConfigData = null;
     if (fileTypeConfig) {
       try {
-        const FileTypeConfig = require('../fileTypeConfig/models/FileTypeConfig');
+        const FileTypeConfig = require('../../fileTypeConfig/models/FileTypeConfig');
         fileTypeConfigData = await FileTypeConfig.findById(fileTypeConfig);
         if (!fileTypeConfigData) {
           return res.status(400).json({ success: false, error: '文件类型配置不存在' });

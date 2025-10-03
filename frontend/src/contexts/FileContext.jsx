@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { fileService } from '../services';
+import fileService from '../services/fileService';
 
 const FileContext = createContext();
 
@@ -31,7 +31,7 @@ export const FileProvider = ({ children }) => {
 
   const uploadFile = useCallback(async (file) => {
     try {
-      const uploadedFile = await fileService.uploadFile(file);
+      const uploadedFile = await fileService.uploadFile({ file, targetPath: '', baseName: file.name });
       setFiles(prev => [uploadedFile, ...prev]);
       return true;
     } catch (error) {

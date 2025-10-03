@@ -10,7 +10,7 @@ import { CreateDirectoryModal } from './components/CreateDirectoryModal';
 import { SyncModal } from './components/SyncModal';
 import SyncProgressModal from './components/SyncProgressModal';
 import { PageTitle, PageContainer } from '../../components/Common';
-import fileService from '../../services/files/fileService';
+import fileService from '../../services/fileService';
 
 
 const SFTPTransferPage = () => {
@@ -226,7 +226,7 @@ const SFTPTransferPage = () => {
         footer={null}
         width={900}
         centered
-        bodyStyle={{ padding: 20, maxHeight: 600, overflowY: 'auto' }}
+        styles={{ body: { padding: 20, maxHeight: 600, overflowY: 'auto' } }}
       >
         {fileDetail ? (
           <Descriptions
@@ -249,7 +249,16 @@ const SFTPTransferPage = () => {
             <Descriptions.Item label={t('uploaded_by') || '上传用户'}>{fileDetail.uploadedByName || fileDetail.uploadedBy || '-'}</Descriptions.Item>
             <Descriptions.Item label={t('uploaded_at') || '上传时间'}>{fileDetail.uploadedAt ? new Date(fileDetail.uploadedAt).toLocaleString() : '-'}</Descriptions.Item>
             <Descriptions.Item label={t('file_type') || '文件类型'}>
-              {fileDetail?.fileTypeConfig || '-'}
+              {(() => {
+                const v = fileDetail?.fileTypeConfig;
+                if (!v) return '-';
+                if (typeof v === 'string') return v || '-';
+                if (typeof v === 'object') {
+                  const text = [v.module, v.fileType, v.pushPath].filter(Boolean).join(' / ');
+                  return text || '-';
+                }
+                return '-';
+              })()}
             </Descriptions.Item>
             {fileDetail.status === 'not_found' && (
               <Descriptions.Item label={t('message') || '消息'} span={2}>{t('no_upload_log') || '未找到对应的上传记录'}</Descriptions.Item>

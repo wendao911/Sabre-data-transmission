@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { message, Modal } from 'antd';
-import { fileService } from '../services/fileService';
+import fileService from '../../../services/fileService';
 import config from '../../../config';
 
 export const useFileManagementPage = () => {
@@ -24,7 +24,7 @@ export const useFileManagementPage = () => {
   const fetchFiles = async (page = 1, search = '', sort = sortBy, order = sortOrder, hidden = showHidden, path = currentPath) => {
     setLoading(true);
     try {
-      const data = await fileService.getFiles({ 
+      const data = await fileService.browseFiles({ 
         path,
         page, 
         pageSize: pagination.pageSize, 
@@ -36,7 +36,7 @@ export const useFileManagementPage = () => {
       setFiles(data.items || []);
       setPagination(prev => ({
         ...prev,
-        current: page,
+        current: data.page || page,
         total: data.total || 0
       }));
       setCurrentPath(data.currentPath || '');

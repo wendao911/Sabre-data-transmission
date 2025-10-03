@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Modal } from 'antd';
-import { sftpService } from '../../../services/sftp/sftpService';
+import sftpService from '../../../services/sftpService';
 import { apiClient, API_BASE_URL } from '../../../services/apiClient';
 import toast from 'react-hot-toast';
 
@@ -192,7 +192,8 @@ export const useSFTPTransfer = () => {
   ) => {
     try {
       setLocalLoading(true);
-      const res = await (await import('../../../services/files/fileService')).fileService.browseFiles({ path, page, pageSize, sortBy, sortOrder });
+      const { default: fileService } = await import('../../../services/fileService');
+      const res = await fileService.browseFiles({ path, page, pageSize, sortBy, sortOrder });
       setLocalList((res.items || []).map(it => ({
         name: it.name,
         path: it.path,
@@ -230,7 +231,7 @@ export const useSFTPTransfer = () => {
     try {
       const name = values?.name || values?.directoryName;
       if (!name) return;
-      const { fileService } = await import('../../../services/files/fileService');
+      const { default: fileService } = await import('../../../services/fileService');
       const resp = await fileService.createDirectory(localPath || '', name);
       if (resp?.success) {
         await loadLocalList(localPath || '');
@@ -246,7 +247,7 @@ export const useSFTPTransfer = () => {
     input.onchange = async () => {
       const file = input.files && input.files[0];
       if (!file) return;
-      const { fileService } = await import('../../../services/files/fileService');
+      const { default: fileService } = await import('../../../services/fileService');
       const dot = file.name.lastIndexOf('.');
       const baseName = dot > 0 ? file.name.substring(0, dot) : file.name;
       await fileService.uploadFile({ file, targetPath: localPath || '', baseName });
@@ -257,7 +258,7 @@ export const useSFTPTransfer = () => {
 
   const handleLocalDelete = async (item) => {
     try {
-      const { fileService } = await import('../../../services/files/fileService');
+      const { default: fileService } = await import('../../../services/fileService');
       const target = item.path || (localPath ? `${localPath}/${item.name}` : item.name);
       const resp = await fileService.deleteFile(target);
       if (resp?.success) await loadLocalList(localPath || '');

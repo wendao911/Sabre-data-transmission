@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { message } from 'antd';
-import { sftpService } from '../../../services';
+import sftpService from '../../../services/sftpService';
 import { useLanguage } from './useLanguage';
 
 export const useSFTPConfig = () => {
